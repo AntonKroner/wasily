@@ -1,0 +1,17 @@
+compatibility_date = "2024-12-19"
+name = "wasily-test-worker"
+workers_dev = true
+routes = []
+main = "./index.ts"
+
+vars = {  }
+durable_objects.bindings = []
+kv_namespaces = [{ binding = "kvStore", id = "aaaaa", preview_id = "aaaaa" }]
+r2_buckets = []
+
+[version_metadata]
+binding = "version"
+
+[dev]
+host = "example.com"
+port = 8787

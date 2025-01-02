@@ -1,17 +1,45 @@
 {
   "name": "@cloudflare/workers-wasi",
-  "version": "0.0.5",
-  "main": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "repository": "github:cloudflare/workers-wasi",
-  "files": [
-    "dist",
-    "src"
-  ],
+  "version": "0.0.1",
   "license": "BSD-3-Clause",
+  "repository": "github:AntonKroner/wasily",
+	"private": false,
+	"type": "module",
+	"module": "./dist/mjs/index.js",
+	"types": "./dist/types/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"default": "./dist/mjs/index.js",
+				"types": "./dist/types/index.d.ts"
+			},
+			"require": {
+				"default": "./dist/cjs/index.js",
+				"types": "./dist/types/index.d.ts"
+			}
+		}
+	},
+	"scripts": {
+		"lint": "eslint --max-warnings=0 '**/*.{ts,tsx}'",
+		"fix": "eslint '**/*.{ts,tsx}' --fix",
+		"build": "rimraf dist/* && tsc -p tsconfig.mjs.json && tsc -p tsconfig.cjs.json",
+		"test": "vitest --run",
+		"coverage": "vitest --coverage",
+		"prepare": "npm run build",
+		"clean": "rimraf dist node_modules coverage",
+		"verify": "npm run build && npm run test && npm run lint && npm audit"
+	},
   "devDependencies": {
-    "@cloudflare/workers-types": "^3.1.1",
-    "esbuild": "^0.13.4",
-    "typescript": "^4.4.4"
+    "@cloudflare/workers-types": "^4.20241230.0",
+    "@typescript-eslint/eslint-plugin": "6.18.1",
+		"@typescript-eslint/parser": "6.18.1",
+		"eslint": "8.56.0",
+		"eslint-plugin-prettierx": "github:utily/eslint-plugin-prettierx#utily-20231004",
+		"eslint-plugin-simple-import-sort": "12.1.1",
+		"prettierx": "github:utily/prettierx#utily-20231004",
+    "typescript": "^5.7.2",
+    "tslib": "2.8.1",
+		"@vitest/coverage-istanbul": "^2.1.8",
+		"vitest": "^2.1.8"
   }
 }

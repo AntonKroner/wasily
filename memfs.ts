@@ -1,6 +1,6 @@
 // @ts-ignore
 import wasm from './memfs.wasm'
-import * as wasi from './snapshot_preview1'
+import * as wasi from './src/snapshot_preview1'
 
 /**
  * Used to initialize filesystem contents, currently used for testing with

@@ -1,0 +1,13 @@
+{
+	"configurations": [
+		{
+			"name": "Wrangler (attatch)",
+			"type": "node",
+			"request": "attach",
+			"port": 9229,
+			"cwd": "/",
+			"attachExistingChildren": false,
+			"autoAttachChildProcesses": false
+		}
+	],
+}

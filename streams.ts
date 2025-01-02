@@ -1,4 +1,4 @@
-import * as wasi from './snapshot_preview1'
+import * as wasi from '../snapshot_preview1'
 
 export interface FileDescriptor {
   writev(iovs: Array<Uint8Array>): Promise<number> | number

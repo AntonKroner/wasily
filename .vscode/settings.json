@@ -1,0 +1,44 @@
+{
+	"files.exclude": {
+		".*": true,
+		"*.json": true,
+		"dist": true,
+		"README.md": true,
+		"LICENSE": true,
+		"CODEOWNERS": true,
+		"**/tsconfig.*": true,
+		"node_modules": true,
+		"*.code-workspace": true,
+		"*.config.js": true,
+		"*.toml": false,
+		"stencil.config.ts": false,
+	},
+	"editor.tabSize": 2,
+	"editor.detectIndentation": false,
+	"editor.insertSpaces": false,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit",
+		"eslint.autoFixOnSave": "explicit"
+	},
+	"eslint.format.enable": true,
+	"eslint.lintTask.enable": true,
+	"files.insertFinalNewline": true,
+	"javascript.format.enable": false,
+	"typescript.format.enable": false,
+	"cSpell.words": [
+		"authly",
+		"cloudly",
+		"cryptly",
+		"flagly",
+		"gracely",
+		"huggingface",
+		"isly",
+		"isoly",
+		"langly",
+		"paramly",
+		"persistly",
+		"servly",
+		"uply"
+	],
+	"debug.javascript.autoAttachFilter": "disabled"
+}

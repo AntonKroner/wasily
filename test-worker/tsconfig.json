@@ -1,0 +1,36 @@
+{
+	"compilerOptions": {
+		"module": "ESNEXT",
+		"target": "ESNEXT",
+		"lib": [
+			"ESNEXT"
+		],
+		"types": [
+			"@cloudflare/workers-types",
+			"./main.d.ts"
+		],
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"allowJs": true,
+		"strict": true,
+		"alwaysStrict": true,
+		"preserveConstEnums": true,
+		"moduleResolution": "node",
+		"sourceMap": true,
+		"esModuleInterop": true,
+		"noImplicitAny": true,
+		"removeComments": true,
+		"noImplicitThis": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"strictNullChecks": true,
+	},
+	"include": [
+		"./**/*.ts"
+	],
+	"exclude": [
+		"**/*.spec.ts",
+		"**/*.test.ts",
+		"**/*.d.ts"
+	]
+}
