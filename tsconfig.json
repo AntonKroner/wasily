@@ -35,6 +35,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"baseUrl": ".",
 		"types": [
+			"./memfs.d.ts",
 			"vitest/globals"
 		]
 	},

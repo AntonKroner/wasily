@@ -1,3 +1,4 @@
+#include <cstring>
 #include <libgen.h>
 #include <rapidjson/document.h>
 #include <stdarg.h>
@@ -807,7 +808,8 @@ struct Context {
     auto resolved_path = frame.alloc_uninitialized<char>(new_path_size);
 
     char* iter = resolved_path.data();
-    memcpy(iter, dir.begin(), dir.size());
+		std::__wrap_iter<const char *> a = dir.begin();
+    std::memcpy(iter, &a, dir.size());
     iter += dir.size();
 
     if (unresolved_path == ".") {
@@ -815,7 +817,7 @@ struct Context {
     } else {
       *iter = '/';
       ++iter;
-      memcpy(iter, &unresolved_path[0], unresolved_path.size());
+      std::memcpy(iter, &unresolved_path[0], unresolved_path.size());
       iter += unresolved_path.size();
       *iter = 0;
     }

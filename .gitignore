@@ -5,3 +5,5 @@ deps/wasi-sdk-13.0
 test-worker/.wrangler
 deps
 deps
+.cache
+compile_commands.json

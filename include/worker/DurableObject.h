@@ -10,6 +10,9 @@
   #define WORKER_NULLABLE
 #endif
 
+// #define DURABLE_OBJECT_EXPORT(name, argument) worker_DurableObject_#name##(argument) \
+//   __attribute__((__import_module__("durableObject"), __import_name__(#name)))
+
 extern void worker_DurableObject_State_id(char id[static 65])
   __attribute__((__import_module__("durableObject"), __import_name__("State_id")));
 WORKER_ASYNC extern void worker_DurableObject_State_Storage_put(
