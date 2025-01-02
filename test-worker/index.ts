@@ -1,9 +1,12 @@
 // import * as utility from "@tybys/wasm-util"
+import { wasily } from "wasily"
 import { Environment } from "./Environment"
 import main from "./main.wasm"
 
 export default {
 	async fetch(request: Request, environment: Environment, execution: ExecutionContext) {
+		const a = new wasily.WASI()
+		const b: wasily.Options = {}
 		await environment.kvStore.put("asdf", "asdf asdf asdf")
 		const instance = new WebAssembly.Instance(main, {
 			env: {

@@ -4,46 +4,35 @@ export interface FileDescriptor {
 	writev(iovs: Array<Uint8Array>): Promise<number> | number
 	readv(iovs: Array<Uint8Array>): Promise<number> | number
 	close(): Promise<void> | void
-
 	preRun(): Promise<void>
 	postRun(): Promise<void>
 }
-
 class DevNull implements FileDescriptor {
 	writev(iovs: Array<Uint8Array>): number {
 		return iovs.map(iov => iov.byteLength).reduce((prev, curr) => prev + curr)
 	}
-
 	readv(iovs: Array<Uint8Array>): number {
 		return 0
 	}
-
 	close(): void {}
-
 	async preRun(): Promise<void> {}
 	async postRun(): Promise<void> {}
 }
-
 class ReadableStreamBase {
 	writev(iovs: Array<Uint8Array>): number {
 		throw new Error("Attempting to call write on a readable stream")
 	}
-
 	close(): void {}
-
 	async preRun(): Promise<void> {}
 	async postRun(): Promise<void> {}
 }
-
 class AsyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {
 	#pending = new Uint8Array()
 	#reader: ReadableStreamDefaultReader
-
 	constructor(reader: ReadableStreamDefaultReader) {
 		super()
 		this.#reader = reader
 	}
-
 	async readv(iovs: Array<Uint8Array>): Promise<number> {
 		let read = 0
 		for (let iov of iovs) {
@@ -67,21 +56,16 @@ class AsyncReadableStreamAdapter extends ReadableStreamBase implements FileDescr
 		return read
 	}
 }
-
 class WritableStreamBase {
 	readv(iovs: Array<Uint8Array>): number {
 		throw new Error("Attempting to call read on a writable stream")
 	}
-
 	close(): void {}
-
 	async preRun(): Promise<void> {}
 	async postRun(): Promise<void> {}
 }
-
 class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
 	#writer: WritableStreamDefaultWriter
-
 	constructor(writer: WritableStreamDefaultWriter) {
 		super()
 		this.#writer = writer
@@ -98,17 +82,14 @@ class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescr
 		}
 		return written
 	}
-
 	override async close(): Promise<void> {
 		await this.#writer.close()
 	}
 }
-
 class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
 	#writer: WritableStreamDefaultWriter
 	#buffer: Uint8Array = new Uint8Array(4096)
 	#bytesWritten: number = 0
-
 	constructor(writer: WritableStreamDefaultWriter) {
 		super()
 		this.#writer = writer
@@ -120,7 +101,6 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 			if (iov.byteLength === 0) {
 				continue
 			}
-
 			// Check if we're about to overflow the buffer and resize if need be.
 			const requiredCapacity = this.#bytesWritten + iov.byteLength
 			if (requiredCapacity > this.#buffer.byteLength) {
@@ -128,30 +108,25 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 				while (desiredCapacity < requiredCapacity) {
 					desiredCapacity *= 1.5
 				}
-
 				const oldBuffer = this.#buffer
 				this.#buffer = new Uint8Array(desiredCapacity)
 				this.#buffer.set(oldBuffer)
 			}
-
 			this.#buffer.set(iov, this.#bytesWritten)
 			written += iov.byteLength
 			this.#bytesWritten += iov.byteLength
 		}
 		return written
 	}
-
 	override async postRun(): Promise<void> {
 		const slice = this.#buffer.subarray(0, this.#bytesWritten)
 		await this.#writer.write(slice)
 		await this.#writer.close()
 	}
 }
-
 class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {
 	#buffer?: Uint8Array
 	#reader: ReadableStreamDefaultReader
-
 	constructor(reader: ReadableStreamDefaultReader) {
 		super()
 		this.#reader = reader
@@ -170,54 +145,42 @@ class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescri
 		}
 		return read
 	}
-
 	override async preRun(): Promise<void> {
 		const pending: Array<Uint8Array> = []
 		let length = 0
-
 		for (;;) {
 			const result = await this.#reader.read()
 			if (result.done) {
 				break
 			}
-
 			const data = result.value
 			pending.push(data)
 			length += data.length
 		}
-
 		const result = new Uint8Array(length)
 		let offset = 0
-
 		pending.forEach(item => {
 			result.set(item, offset)
 			offset += item.length
 		})
-
 		this.#buffer = result
 	}
 }
-
 export const fromReadableStream = (stream: ReadableStream | undefined, supportsAsync: boolean): FileDescriptor => {
 	if (!stream) {
 		return new DevNull()
 	}
-
 	if (supportsAsync) {
 		return new AsyncReadableStreamAdapter(stream.getReader())
 	}
-
 	return new SyncReadableStreamAdapter(stream.getReader())
 }
-
 export const fromWritableStream = (stream: WritableStream | undefined, supportsAsync: boolean): FileDescriptor => {
 	if (!stream) {
 		return new DevNull()
 	}
-
 	if (supportsAsync) {
 		return new AsyncWritableStreamAdapter(stream.getWriter())
 	}
-
 	return new SyncWritableStreamAdapter(stream.getWriter())
 }

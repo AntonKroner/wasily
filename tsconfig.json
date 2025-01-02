@@ -43,7 +43,9 @@
 		"**/*.spec.ts",
 	],
 	"files": [
-		"index.ts"
+		"./index.ts",
+		"./memfs.d.ts",
+		// "./memfs.wasm"
 	],
 	"typeAcquisition": {
 		"enable": true

@@ -1,5 +1,5 @@
 {
-  "name": "@cloudflare/workers-wasi",
+  "name": "wasily",
   "version": "0.0.1",
   "license": "BSD-3-Clause",
   "repository": "github:AntonKroner/wasily",
