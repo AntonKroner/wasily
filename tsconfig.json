@@ -35,7 +35,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"baseUrl": ".",
 		"types": [
-			"./memfs.d.ts",
+			"./memfs/memfs.d.ts",
 			"vitest/globals"
 		]
 	},
@@ -44,7 +44,7 @@
 	],
 	"files": [
 		"./index.ts",
-		"./memfs.d.ts",
+		"memfs/memfs.d.ts",
 	],
 	"typeAcquisition": {
 		"enable": true

@@ -1,5 +1,5 @@
+import * as wasi from "../snapshot_preview1"
 import wasm from "./memfs.wasm"
-import * as wasi from "./snapshot_preview1"
 
 /*** Used to initialize filesystem contents, currently used for testing with* existing WASI test suites* @internal**/
 export interface _FS {

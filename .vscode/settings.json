@@ -35,10 +35,12 @@
 		"isly",
 		"isoly",
 		"langly",
+		"littlefs",
 		"paramly",
 		"persistly",
 		"servly",
 		"uply",
+		"wasi",
 		"wasily"
 	],
 	"debug.javascript.autoAttachFilter": "disabled"
