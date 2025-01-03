@@ -1,4 +1,3 @@
-// See: https://github.com/WebAssembly/WASI/blob/main/phases/snapshot/witx/wasi_snapshot_preview1.witx
 export interface SnapshotPreview1 {
 	args_get(argv_ptr: number, argv_buf_ptr: number): number
 	args_sizes_get(argc_ptr: number, argv_buf_size_ptr: number): number

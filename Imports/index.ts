@@ -2,6 +2,7 @@ import * as platform from "@cloudflare/workers-types"
 import { DurableObject as ImportsDurableObject } from "./DurableObject"
 import { Env as ImportsEnv } from "./Env"
 import { Imports as ImportsImports } from "./Imports"
+import { Wasi as ImportsWasi } from "./Wasi"
 import { Worker as ImportsWorker } from "./Worker"
 
 export type Imports = ImportsImports
@@ -17,4 +18,5 @@ export namespace Imports {
 		E extends Record<string, undefined | string | platform.KVNamespace | platform.DurableObjectNamespace>
 	> = ImportsDurableObject<E>
 	export const DurableObject = ImportsDurableObject
+	export import Wasi = ImportsWasi
 }

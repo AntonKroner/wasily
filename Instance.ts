@@ -36,7 +36,7 @@ export class Instance {
 		const instance = new WebAssembly.Instance(module, {
 			...asyncify.wrapImports({
 				...options?.emscriptenImports,
-				...Object.fromEntries(Object.entries(this.#imports).map(n => [n[0], n[1].open()])),
+				...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
 			}),
 			wasi_snapshot_preview1: {
 				...(this.#wasiImport = this.#interface.wasiImport),

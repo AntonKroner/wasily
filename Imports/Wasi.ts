@@ -1,12 +1,13 @@
-export { traceImportsToConsole } from "./helpers"
+export { traceImportsToConsole } from "../helpers"
 // import * as utility from "@tybys/wasm-util"
-import { _FS, MemFS } from "./memfs"
-import { ProcessExit } from "./ProcessExit"
-import * as wasi from "./snapshot_preview1"
-import { FileDescriptor, fromReadableStream, fromWritableStream } from "./streams"
+import { _FS, MemFS } from "../memfs"
+import { ProcessExit } from "../ProcessExit"
+import * as wasi from "../snapshot_preview1"
+import { FileDescriptor, fromReadableStream, fromWritableStream } from "../streams"
+import { Imports } from "./Imports"
 
 /*** @public*/
-export class WASI {
+export class Wasi extends Imports {
 	#args: Array<string>
 	#env: Array<string>
 	#memory?: WebAssembly.Memory
@@ -16,7 +17,8 @@ export class WASI {
 	#memfs: MemFS
 	#state: any = true
 	#asyncify: boolean
-	constructor(options?: WASI.Options) {
+	constructor(options?: Wasi.Options) {
+		super()
 		console.log("WASI 1")
 		this.#args = options?.args ?? []
 		const env = options?.env ?? {}
@@ -39,31 +41,64 @@ export class WASI {
 		console.log("WASI 6")
 	}
 
-	/*** See {@link https://nodejs.org/api/wasi.html}**  @throws {@link ProcessExit}**  This exception is thrown if {@link WASIOptions.returnOnExit} is set to `false`*  and `proc_exit` is called**/
+	open(): Record<keyof wasi.SnapshotPreview1, (...args: any[]) => number | Promise<number>> {
+		const result: Record<keyof wasi.SnapshotPreview1, (...args: any[]) => number | Promise<number>> = {
+			args_get: this.#args_get.bind(this),
+			args_sizes_get: this.#args_sizes_get.bind(this),
+			clock_res_get: this.#clock_res_get.bind(this),
+			clock_time_get: this.#clock_time_get.bind(this),
+			environ_get: this.#environ_get.bind(this),
+			environ_sizes_get: this.#environ_sizes_get.bind(this),
+			fd_advise: this.#memfs.exports.fd_advise.bind(this),
+			fd_allocate: this.#memfs.exports.fd_allocate.bind(this),
+			fd_close: this.#memfs.exports.fd_close.bind(this),
+			fd_datasync: this.#memfs.exports.fd_datasync.bind(this),
+			fd_fdstat_get: this.#memfs.exports.fd_fdstat_get.bind(this),
+			fd_fdstat_set_flags: this.#memfs.exports.fd_fdstat_set_flags.bind(this),
+			fd_fdstat_set_rights: this.#memfs.exports.fd_fdstat_set_rights.bind(this),
+			fd_filestat_get: this.#memfs.exports.fd_filestat_get.bind(this),
+			fd_filestat_set_size: this.#memfs.exports.fd_filestat_set_size.bind(this),
+			fd_filestat_set_times: this.#memfs.exports.fd_filestat_set_times.bind(this),
+			fd_pread: this.#memfs.exports.fd_pread.bind(this),
+			fd_prestat_dir_name: this.#memfs.exports.fd_prestat_dir_name.bind(this),
+			fd_prestat_get: this.#memfs.exports.fd_prestat_get.bind(this),
+			fd_pwrite: this.#memfs.exports.fd_pwrite.bind(this),
+			fd_read: this.#fd_read.bind(this),
+			fd_readdir: this.#memfs.exports.fd_readdir.bind(this),
+			fd_renumber: this.#memfs.exports.fd_renumber.bind(this),
+			fd_seek: this.#memfs.exports.fd_seek.bind(this),
+			fd_sync: this.#memfs.exports.fd_sync.bind(this),
+			fd_tell: this.#memfs.exports.fd_tell.bind(this),
+			fd_write: this.#fd_write.bind(this),
+			path_create_directory: this.#memfs.exports.path_create_directory.bind(this),
+			path_filestat_get: this.#memfs.exports.path_filestat_get.bind(this),
+			path_filestat_set_times: this.#memfs.exports.path_filestat_set_times.bind(this),
+			path_link: this.#memfs.exports.path_link.bind(this),
+			path_open: this.#memfs.exports.path_open.bind(this),
+			path_readlink: this.#memfs.exports.path_readlink.bind(this),
+			path_remove_directory: this.#memfs.exports.path_remove_directory.bind(this),
+			path_rename: this.#memfs.exports.path_rename.bind(this),
+			path_symlink: this.#memfs.exports.path_symlink.bind(this),
+			path_unlink_file: this.#memfs.exports.path_unlink_file.bind(this),
+			poll_oneoff: this.#poll_oneoff.bind(this),
+			proc_exit: this.#proc_exit.bind(this),
+			proc_raise: this.#proc_raise.bind(this),
+			random_get: this.#random_get.bind(this),
+			sched_yield: this.#sched_yield.bind(this),
+			sock_recv: this.#sock_recv.bind(this),
+			sock_send: this.#sock_send.bind(this),
+			sock_shutdown: this.#sock_shutdown.bind(this),
+		}
+		return result
+	}
 	async start(instance: WebAssembly.Instance): Promise<number | undefined> {
 		this.#memory = instance.exports.memory as WebAssembly.Memory
 		this.#memfs.initialize(this.#memory)
-		console.log("esports: ", this.#asyncify)
-
 		try {
-			// if (this.#asyncify) {
-			// 	if (!instance.exports.asyncify_get_state) {
-			// 		throw new Error(
-			// 			"streamStdio is requested but the module is missing 'Asyncify' exports, see https://github.com/GoogleChromeLabs/asyncify"
-			// 		)
-			// 	}
-			// 	this.#state.init(instance)
-			// }
 			await Promise.all(this.#streams.map(s => s.preRun()))
-			// if (this.#asyncify) {
-			// 	await this.#state.exports._start()
-			// }
-			// else
-			// {
 			// eslint-disable-next-line @typescript-eslint/ban-types
 			const entrypoint = instance.exports._start as Function
 			await entrypoint()
-			// }
 		} catch (e) {
 			if (!this.#returnOnExit) {
 				throw e
@@ -76,7 +111,6 @@ export class WASI {
 				throw e
 			}
 		} finally {
-			// We must call close to avoid early termination due to hanging promise
 			await Promise.all(this.#streams.map(s => s.close()))
 			await Promise.all(this.#streams.map(s => s.postRun()))
 		}
@@ -245,7 +279,7 @@ export class WASI {
 	#poll_oneoff(in_ptr: number, out_ptr: number, nsubscriptions: number, retptr0: number): number {
 		return wasi.Result.ENOSYS
 	}
-	#proc_exit(code: number) {
+	#proc_exit(code: number): number {
 		throw new ProcessExit(code)
 	}
 	#proc_raise(signal: number): number {
@@ -277,13 +311,13 @@ export class WASI {
 	}
 }
 export type { _FS }
-export namespace WASI {
+export namespace Wasi {
 	export interface Options {
 		/*** Command-line arguments** @defaultValue `[]`**/
 		args?: string[]
 		/*** Environment variables** @defaultValue `{}`**/
 		env?: Record<string, string>
-		/*** By default WASI applications that call `proc_exit` will throw a {@link ProcessExit} exception, setting this option to true will cause {@link WASI.start} to return the the exit code instead.** @defaultValue `false`**/
+		/*** By default WASI applications that call `proc_exit` will throw a {@link ProcessExit} exception, setting this option to true will cause {@link Wasi.start} to return the the exit code instead.** @defaultValue `false`**/
 		returnOnExit?: boolean
 		/*** A list of directories that will be accessible in the WebAssembly application's sandbox.** @defaultValue `[]`**/
 		preopens?: string[]
