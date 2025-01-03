@@ -27,6 +27,7 @@
 	"typescript.format.enable": false,
 	"cSpell.words": [
 		"asyncified",
+		"asyncify",
 		"authly",
 		"cloudly",
 		"cryptly",
