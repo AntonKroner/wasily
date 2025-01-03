@@ -4,7 +4,6 @@ import { _FS, MemFS } from "./memfs"
 import * as wasi from "./snapshot_preview1"
 import { FileDescriptor, fromReadableStream, fromWritableStream } from "./streams"
 
-export type Environment = { [key: string]: string }
 /*** ProcessExit is thrown when `proc_exit` is called* @public*/
 export class ProcessExit extends Error {
 	/*** The exit code passed to `proc_exit` */
@@ -21,7 +20,7 @@ export interface WASIOptions {
 	/*** Command-line arguments** @defaultValue `[]`**/
 	args?: string[]
 	/*** Environment variables** @defaultValue `{}`**/
-	env?: Environment
+	env?: Record<string, string>
 	/*** By default WASI applications that call `proc_exit` will throw a {@link ProcessExit} exception, setting this option to true will cause {@link WASI.start} to return the the exit code instead.** @defaultValue `false`**/
 	returnOnExit?: boolean
 	/*** A list of directories that will be accessible in the WebAssembly application's sandbox.** @defaultValue `[]`**/
@@ -49,21 +48,28 @@ export class WASI {
 	// #state: any = new Asyncify()
 	#asyncify: boolean
 	constructor(options?: WASIOptions) {
+		console.log("WASI 1")
 		this.#args = options?.args ?? []
 		const env = options?.env ?? {}
+		console.log("WASI 2")
 		this.#env = Object.keys(env).map(key => {
 			return `${key}=${env[key]}`
 		})
+		console.log("WASI 3")
 		this.#returnOnExit = options?.returnOnExit ?? false
 		this.#preopens = options?.preopens ?? []
 		this.#asyncify = options?.streamStdio ?? false
+		console.log("WASI 4")
 		this.#streams = [
 			fromReadableStream(options?.stdin, this.#asyncify),
 			fromWritableStream(options?.stdout, this.#asyncify),
 			fromWritableStream(options?.stderr, this.#asyncify),
 		]
+		console.log("WASI 5")
 		this.#memfs = new MemFS(this.#preopens, options?.fs ?? {})
+		console.log("WASI 6")
 	}
+
 	/*** See {@link https://nodejs.org/api/wasi.html}**  @throws {@link ProcessExit}**  This exception is thrown if {@link WASIOptions.returnOnExit} is set to `false`*  and `proc_exit` is called**/
 	async start(instance: WebAssembly.Instance): Promise<number | undefined> {
 		this.#memory = instance.exports.memory as WebAssembly.Memory

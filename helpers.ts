@@ -12,10 +12,7 @@ const wrapFunc = (name: string, f: Function, log: (data: string) => void) => {
 		}
 	}
 }
-
-/**
- * @internal
- */
+/*** @internal*/
 // eslint-disable-next-line @typescript-eslint/ban-types
 export const traceImportsToConsole = (imports: Record<string, Function>): Record<string, Function> => {
 	for (const key in imports) {
