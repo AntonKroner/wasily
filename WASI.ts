@@ -24,7 +24,7 @@ export class WASI {
 	#returnOnExit: boolean
 	#streams: Array<FileDescriptor>
 	#memfs: MemFS
-	// #state: any = new Asyncify()
+	#state: any = true
 	#asyncify: boolean
 	constructor(options?: WASI.Options) {
 		console.log("WASI 1")
@@ -53,6 +53,8 @@ export class WASI {
 	async start(instance: WebAssembly.Instance): Promise<number | undefined> {
 		this.#memory = instance.exports.memory as WebAssembly.Memory
 		this.#memfs.initialize(this.#memory)
+		console.log("esports: ", this.#asyncify)
+
 		try {
 			// if (this.#asyncify) {
 			// 	if (!instance.exports.asyncify_get_state) {
@@ -67,11 +69,11 @@ export class WASI {
 			// 	await this.#state.exports._start()
 			// }
 			// else
-			{
-				// eslint-disable-next-line @typescript-eslint/ban-types
-				const entrypoint = instance.exports._start as Function
-				entrypoint()
-			}
+			// {
+			// eslint-disable-next-line @typescript-eslint/ban-types
+			const entrypoint = instance.exports._start as Function
+			await entrypoint()
+			// }
 		} catch (e) {
 			if (!this.#returnOnExit) {
 				throw e

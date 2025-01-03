@@ -20,6 +20,7 @@
 		"source.fixAll.eslint": "explicit",
 		"eslint.autoFixOnSave": "explicit"
 	},
+	"editor.formatOnSave": true,
 	"eslint.format.enable": true,
 	"eslint.lintTask.enable": true,
 	"files.insertFinalNewline": true,
