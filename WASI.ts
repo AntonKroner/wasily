@@ -15,27 +15,6 @@ export class ProcessExit extends Error {
 		Object.setPrototypeOf(this, ProcessExit.prototype)
 	}
 }
-/*** Options to configure the {@link WASI} interface** @public*/
-export interface WASIOptions {
-	/*** Command-line arguments** @defaultValue `[]`**/
-	args?: string[]
-	/*** Environment variables** @defaultValue `{}`**/
-	env?: Record<string, string>
-	/*** By default WASI applications that call `proc_exit` will throw a {@link ProcessExit} exception, setting this option to true will cause {@link WASI.start} to return the the exit code instead.** @defaultValue `false`**/
-	returnOnExit?: boolean
-	/*** A list of directories that will be accessible in the WebAssembly application's sandbox.** @defaultValue `[]`**/
-	preopens?: string[]
-	/*** Input stream that the application will be able to read from via stdin*/
-	stdin?: ReadableStream
-	/*** Output stream that the application will be able to write to via stdin*/
-	stdout?: WritableStream
-	/*** Output stream that the application will be able to write to via stderr*/
-	stderr?: WritableStream
-	/*** Enable async IO for stdio streams, requires the application is built with {@link asyncify|https://web.dev/asyncify/}** @experimental* @defaultValue `false`**/
-	streamStdio?: boolean
-	/*** Initial filesystem contents, currently used for testing with* existing WASI test suites* @internal**/
-	fs?: _FS
-}
 /*** @public*/
 export class WASI {
 	#args: Array<string>
@@ -47,7 +26,7 @@ export class WASI {
 	#memfs: MemFS
 	// #state: any = new Asyncify()
 	#asyncify: boolean
-	constructor(options?: WASIOptions) {
+	constructor(options?: WASI.Options) {
 		console.log("WASI 1")
 		this.#args = options?.args ?? []
 		const env = options?.env ?? {}
@@ -306,3 +285,25 @@ export class WASI {
 	}
 }
 export type { _FS }
+export namespace WASI {
+	export interface Options {
+		/*** Command-line arguments** @defaultValue `[]`**/
+		args?: string[]
+		/*** Environment variables** @defaultValue `{}`**/
+		env?: Record<string, string>
+		/*** By default WASI applications that call `proc_exit` will throw a {@link ProcessExit} exception, setting this option to true will cause {@link WASI.start} to return the the exit code instead.** @defaultValue `false`**/
+		returnOnExit?: boolean
+		/*** A list of directories that will be accessible in the WebAssembly application's sandbox.** @defaultValue `[]`**/
+		preopens?: string[]
+		/*** Input stream that the application will be able to read from via stdin*/
+		stdin?: ReadableStream
+		/*** Output stream that the application will be able to write to via stdin*/
+		stdout?: WritableStream
+		/*** Output stream that the application will be able to write to via stderr*/
+		stderr?: WritableStream
+		/*** Enable async IO for stdio streams, requires the application is built with {@link asyncify|https://web.dev/asyncify/}** @experimental* @defaultValue `false`**/
+		streamStdio?: boolean
+		/*** Initial filesystem contents, currently used for testing with* existing WASI test suites* @internal**/
+		fs?: _FS
+	}
+}
