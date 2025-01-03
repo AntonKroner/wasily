@@ -5,5 +5,10 @@ export interface Environment
 	> {
 	adminSecret?: string
 	version?: WorkerVersionMetadata
-	kvStore: KVNamespace
+	kvStore?: KVNamespace
+}
+export namespace Environment {
+	export function toRecord(environment: Environment): Record<string, string> {
+		return Object.fromEntries(Object.entries(environment).map(([key, value]) => [key, value?.toString() ?? ""]))
+	}
 }

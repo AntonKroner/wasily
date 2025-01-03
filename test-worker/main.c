@@ -1,8 +1,12 @@
-void console_log(char* message);
+#include <stdio.h>
+#include "node_modules/wasily/include/worker/worker.h"
 
-int main() {
-	char* value = "asdfasdf";
-	// kv_get("asdf", value);
-	console_log(value);
+int main(int argc, char* argv[static argc]) {
+	for (int i = 0; argc > i; i++) {
+		printf("%s\n", argv[i]);
+	}
+	char value[256] = {0};
+	// worker_KVNamespace_getText("kvStore", "asdf", value);
+	// worker_log(value);
 	return 0;
 }
