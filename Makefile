@@ -12,7 +12,6 @@ all: memfs/memfs.wasm
 clean:
 	rm -rf ./dist/
 	rm -rf ./build/
-	rm memfs.wasm
 	rm memfs/memfs.wasm
 
 WASM_OBJ := \

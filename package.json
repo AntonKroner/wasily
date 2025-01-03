@@ -22,9 +22,8 @@
   "scripts": {
     "lint": "eslint --max-warnings=0 '**/*.{ts,tsx}'",
     "fix": "eslint '**/*.{ts,tsx}' --fix",
-    "build": "rimraf dist/* && tsc -p tsconfig.mjs.json && tsc -p tsconfig.cjs.json && cp memfs/memfs.wasm dist/mjs/memfs/",
-		"make": "",
-		"copy": "",
+    "build": "rimraf dist/* && tsc -p tsconfig.mjs.json && tsc -p tsconfig.cjs.json && make && npm run copy",
+		"copy": "cp memfs/memfs.wasm dist/mjs/memfs/",
     "test": "vitest --run",
     "coverage": "vitest --coverage",
     "prepare": "npm run build",
@@ -46,7 +45,7 @@
   },
   "dependencies": {
     "isly": "^0.1.26",
-		"@tybys/wasm-util": "0.9.0"
+		"@tybys/wasm-util": "^0.9.0"
 
   }
 }
