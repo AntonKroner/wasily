@@ -19,13 +19,13 @@ export abstract class Imports {
 					throw new Error("view()")
 			  })()
 	}
-	#decoder?: platform.TextDecoder
-	protected get decoder(): platform.TextDecoder {
-		return (this.#decoder ??= new platform.TextDecoder())
+	#decoder?: TextDecoder
+	protected get decoder(): TextDecoder {
+		return (this.#decoder ??= new TextDecoder())
 	}
-	#encoder?: platform.TextEncoder
-	protected get encoder(): platform.TextEncoder {
-		return (this.#encoder ??= new platform.TextEncoder())
+	#encoder?: TextEncoder
+	protected get encoder(): TextEncoder {
+		return (this.#encoder ??= new TextEncoder())
 	}
 
 	fromCharPointer(pointer: number): string {
