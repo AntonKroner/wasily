@@ -1,21 +1,21 @@
 export { traceImportsToConsole } from "../helpers"
 // import * as utility from "@tybys/wasm-util"
+import * as platform from "@cloudflare/workers-types"
 import { _FS, MemFS } from "../memfs"
 import { ProcessExit } from "../ProcessExit"
 import * as wasi from "../snapshot_preview1"
 import { FileDescriptor, fromReadableStream, fromWritableStream } from "../streams"
 import { Imports } from "./Imports"
 
-/*** @public*/
 export class Wasi extends Imports {
+	override set memory(memory: platform.WebAssembly.Memory) {
+		this.#memfs.initialize(memory)
+		super.memory = memory
+	}
 	#args: Array<string>
 	#env: Array<string>
-	#memory?: WebAssembly.Memory
-	#preopens: Array<string>
-	#returnOnExit: boolean
 	#streams: Array<FileDescriptor>
-	#memfs: MemFS
-	#state: any = true
+	#memfs: MemFS = new MemFS([], {})
 	#asyncify: boolean
 	constructor(options?: Wasi.Options) {
 		super()
@@ -27,8 +27,6 @@ export class Wasi extends Imports {
 			return `${key}=${env[key]}`
 		})
 		console.log("WASI 3")
-		this.#returnOnExit = options?.returnOnExit ?? false
-		this.#preopens = options?.preopens ?? []
 		this.#asyncify = options?.streamStdio ?? false
 		console.log("WASI 4")
 		this.#streams = [
@@ -37,8 +35,6 @@ export class Wasi extends Imports {
 			fromWritableStream(options?.stderr, this.#asyncify),
 		]
 		console.log("WASI 5")
-		this.#memfs = new MemFS(this.#preopens, options?.fs ?? {})
-		console.log("WASI 6")
 	}
 
 	open(): Record<keyof wasi.SnapshotPreview1, (...args: any[]) => number | Promise<number>> {
@@ -91,98 +87,10 @@ export class Wasi extends Imports {
 		}
 		return result
 	}
-	async start(instance: WebAssembly.Instance): Promise<number | undefined> {
-		this.#memory = instance.exports.memory as WebAssembly.Memory
-		this.#memfs.initialize(this.#memory)
-		try {
-			await Promise.all(this.#streams.map(s => s.preRun()))
-			// eslint-disable-next-line @typescript-eslint/ban-types
-			const entrypoint = instance.exports._start as Function
-			await entrypoint()
-		} catch (e) {
-			if (!this.#returnOnExit) {
-				throw e
-			}
-			if ((e as Error).message === "unreachable") {
-				return 134
-			} else if (e instanceof ProcessExit) {
-				return e.code
-			} else {
-				throw e
-			}
-		} finally {
-			await Promise.all(this.#streams.map(s => s.close()))
-			await Promise.all(this.#streams.map(s => s.postRun()))
-		}
-		return undefined
-	}
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	get wasiImport(): Record<string, Function> {
-		const wrap = (f: any, self: any = this) => {
-			const bound = f.bind(self)
-			// if (this.#asyncify) {
-			// 	return this.#state.wrapImportFn(bound)
-			// }
-			return bound
-		}
-		return {
-			args_get: wrap(this.#args_get),
-			args_sizes_get: wrap(this.#args_sizes_get),
-			clock_res_get: wrap(this.#clock_res_get),
-			clock_time_get: wrap(this.#clock_time_get),
-			environ_get: wrap(this.#environ_get),
-			environ_sizes_get: wrap(this.#environ_sizes_get),
-			fd_advise: wrap(this.#memfs.exports.fd_advise),
-			fd_allocate: wrap(this.#memfs.exports.fd_allocate),
-			fd_close: wrap(this.#memfs.exports.fd_close),
-			fd_datasync: wrap(this.#memfs.exports.fd_datasync),
-			fd_fdstat_get: wrap(this.#memfs.exports.fd_fdstat_get),
-			fd_fdstat_set_flags: wrap(this.#memfs.exports.fd_fdstat_set_flags),
-			fd_fdstat_set_rights: wrap(this.#memfs.exports.fd_fdstat_set_rights),
-			fd_filestat_get: wrap(this.#memfs.exports.fd_filestat_get),
-			fd_filestat_set_size: wrap(this.#memfs.exports.fd_filestat_set_size),
-			fd_filestat_set_times: wrap(this.#memfs.exports.fd_filestat_set_times),
-			fd_pread: wrap(this.#memfs.exports.fd_pread),
-			fd_prestat_dir_name: wrap(this.#memfs.exports.fd_prestat_dir_name),
-			fd_prestat_get: wrap(this.#memfs.exports.fd_prestat_get),
-			fd_pwrite: wrap(this.#memfs.exports.fd_pwrite),
-			fd_read: wrap(this.#fd_read),
-			fd_readdir: wrap(this.#memfs.exports.fd_readdir),
-			fd_renumber: wrap(this.#memfs.exports.fd_renumber),
-			fd_seek: wrap(this.#memfs.exports.fd_seek),
-			fd_sync: wrap(this.#memfs.exports.fd_sync),
-			fd_tell: wrap(this.#memfs.exports.fd_tell),
-			fd_write: wrap(this.#fd_write),
-			path_create_directory: wrap(this.#memfs.exports.path_create_directory),
-			path_filestat_get: wrap(this.#memfs.exports.path_filestat_get),
-			path_filestat_set_times: wrap(this.#memfs.exports.path_filestat_set_times),
-			path_link: wrap(this.#memfs.exports.path_link),
-			path_open: wrap(this.#memfs.exports.path_open),
-			path_readlink: wrap(this.#memfs.exports.path_readlink),
-			path_remove_directory: wrap(this.#memfs.exports.path_remove_directory),
-			path_rename: wrap(this.#memfs.exports.path_rename),
-			path_symlink: wrap(this.#memfs.exports.path_symlink),
-			path_unlink_file: wrap(this.#memfs.exports.path_unlink_file),
-			poll_oneoff: wrap(this.#poll_oneoff),
-			proc_exit: wrap(this.#proc_exit),
-			proc_raise: wrap(this.#proc_raise),
-			random_get: wrap(this.#random_get),
-			sched_yield: wrap(this.#sched_yield),
-			sock_recv: wrap(this.#sock_recv),
-			sock_send: wrap(this.#sock_send),
-			sock_shutdown: wrap(this.#sock_shutdown),
-		}
-	}
-	#view(): DataView {
-		if (!this.#memory) {
-			throw new Error("this.memory not set")
-		}
-		return new DataView(this.#memory.buffer)
-	}
 	#fillValues(values: Array<string>, iter_ptr_ptr: number, buf_ptr: number): number {
 		const encoder = new TextEncoder()
-		const buffer = new Uint8Array(this.#memory!.buffer)
-		const view = this.#view()
+		const buffer = new Uint8Array(this.buffer)
+		const view = this.view()
 		for (const value of values) {
 			view.setUint32(iter_ptr_ptr, buf_ptr, true)
 			iter_ptr_ptr += 4
@@ -193,13 +101,11 @@ export class Wasi extends Imports {
 		return wasi.Result.SUCCESS
 	}
 	#fillSizes(values: Array<string>, count_ptr: number, buffer_size_ptr: number): number {
-		const view = this.#view()
+		const view = this.view()
 		const encoder = new TextEncoder()
-		const len = values.reduce((acc, value) => {
-			return acc + encoder.encode(`${value}\0`).length
-		}, 0)
+		const length = values.reduce((result, value) => result + encoder.encode(`${value}\0`).length, 0)
 		view.setUint32(count_ptr, values.length, true)
-		view.setUint32(buffer_size_ptr, len, true)
+		view.setUint32(buffer_size_ptr, length, true)
 		return wasi.Result.SUCCESS
 	}
 	#args_get(argv_ptr_ptr: number, argv_buf_ptr: number): number {
@@ -214,7 +120,7 @@ export class Wasi extends Imports {
 			case wasi.Clock.MONOTONIC:
 			case wasi.Clock.PROCESS_CPUTIME_ID:
 			case wasi.Clock.THREAD_CPUTIME_ID: {
-				const view = this.#view()
+				const view = this.view()
 				view.setBigUint64(retptr0, BigInt(1e6), true)
 				return wasi.Result.SUCCESS
 			}
@@ -227,7 +133,7 @@ export class Wasi extends Imports {
 			case wasi.Clock.MONOTONIC:
 			case wasi.Clock.PROCESS_CPUTIME_ID:
 			case wasi.Clock.THREAD_CPUTIME_ID: {
-				const view = this.#view()
+				const view = this.view()
 				view.setBigUint64(retptr0, BigInt(Date.now()) * BigInt(1e6), true)
 				return wasi.Result.SUCCESS
 			}
@@ -243,7 +149,7 @@ export class Wasi extends Imports {
 	#fd_read(fd: number, iovs_ptr: number, iovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
 			const desc = this.#streams[fd]
-			const view = this.#view()
+			const view = this.view()
 			const iovs = wasi.iovViews(view, iovs_ptr, iovs_len)
 			const result = desc!.readv(iovs)
 			if (typeof result === "number") {
@@ -261,7 +167,7 @@ export class Wasi extends Imports {
 	#fd_write(fd: number, ciovs_ptr: number, ciovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
 			const desc = this.#streams[fd]
-			const view = this.#view()
+			const view = this.view()
 			const iovs = wasi.iovViews(view, ciovs_ptr, ciovs_len)
 			const result = desc!.writev(iovs)
 			if (typeof result === "number") {
@@ -286,7 +192,7 @@ export class Wasi extends Imports {
 		return wasi.Result.ENOSYS
 	}
 	#random_get(buffer_ptr: number, buffer_len: number): number {
-		const buffer = new Uint8Array(this.#memory!.buffer, buffer_ptr, buffer_len)
+		const buffer = new Uint8Array(this.buffer, buffer_ptr, buffer_len)
 		crypto.getRandomValues(buffer)
 		return wasi.Result.SUCCESS
 	}

@@ -1,12 +1,10 @@
 import * as utility from "@tybys/wasm-util"
 import { FileDescriptor } from "./FileDescriptor"
 import { Imports } from "./Imports"
-import { WASI } from "./WASI"
+import { ProcessExit } from "./ProcessExit"
 
 export class Instance {
 	readonly exports: Record<string, (...args: any[]) => number | Promise<number>> = {}
-	#interface: WASI
-	#wasiImport: WASI["wasiImport"]
 	#asyncifiedInstance: WebAssembly.Instance
 	#imports: Record<string, Imports> = {}
 	#stdout: TransformStream = new TransformStream()
@@ -26,20 +24,22 @@ export class Instance {
 		options?.imports && (this.#imports = options?.imports)
 		options?.default?.env && (this.#imports["env"] = new Imports.Env())
 		options?.input && (this.input = options.input)
-		const asyncify = new utility.Asyncify()
-		this.#interface = new WASI({
+
+		const wasi = new Imports.Wasi({
 			args: options?.arguments,
 			env: options?.environment,
 			streamStdio: true,
 			returnOnExit: true,
 		})
+
+		const asyncify = new utility.Asyncify()
 		const instance = new WebAssembly.Instance(module, {
 			...asyncify.wrapImports({
 				...options?.emscriptenImports,
 				...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
 			}),
 			wasi_snapshot_preview1: {
-				...(this.#wasiImport = this.#interface.wasiImport),
+				...wasi.open(),
 				clock_time_get: asyncify.wrapImportFunction(this.#clock_time_get.bind(this)),
 				fd_read: this.#fd_read.bind(this),
 				fd_write: this.#fd_write.bind(this),
@@ -56,6 +56,7 @@ export class Instance {
 		Object.values(this.#imports).forEach(
 			n => (n.memory = this.#asyncifiedInstance.exports.memory as WebAssembly.Memory)
 		)
+		wasi.memory = this.#asyncifiedInstance.exports.memory as WebAssembly.Memory
 	}
 
 	resetStreams(): void {
@@ -67,7 +68,26 @@ export class Instance {
 	}
 	async run(): Promise<{ out: ReadableStream<Uint8Array>; error: ReadableStream<Uint8Array> }> {
 		await Promise.all(this.#streams.map(s => s.preRun()))
-		const error = await this.#interface.start(this.#asyncifiedInstance)
+		let error: number | undefined = undefined
+		try {
+			// eslint-disable-next-line @typescript-eslint/ban-types
+			const entrypoint = this.#asyncifiedInstance.exports._start as Function
+			const result = await entrypoint()
+			console.log("result: ", result)
+			// }
+		} catch (e) {
+			if ((e as Error).message === "unreachable")
+				error = 134
+			else if (e instanceof ProcessExit)
+				error = e.code
+			else
+				throw e
+		} finally {
+			// We must call close to avoid early termination due to hanging promise
+			await Promise.all(this.#streams.map(s => s.close()))
+			await Promise.all(this.#streams.map(s => s.postRun()))
+		}
+		// const error = await this.#interface.start(this.#asyncifiedInstance)
 		error && console.log("error code: ", error)
 		await Promise.all(this.#streams.map(s => s.postRun()))
 		return { out: this.#stdout.readable, error: this.#stderr.readable }

@@ -13,16 +13,16 @@ export default {
 			},
 			[request.url, "--method", request.method]
 		)
-		const wasi = new wasily.Imports.Wasi({
-			args: argument,
-			env: Environment.toRecord(environment),
-			streamStdio: true,
-			returnOnExit: true,
-		})
+		// const wasi = new wasily.Imports.Wasi({
+		// 	args: argument,
+		// 	env: Environment.toRecord(environment),
+		// 	streamStdio: true,
+		// 	returnOnExit: true,
+		// })
 		const instance = wasily.Instance.open(main, {
 			arguments: argument,
 			default: { env: true },
-			imports: { worker: new wasily.Imports.Worker(environment as any), wasi },
+			imports: { worker: new wasily.Imports.Worker(environment as any) },
 			environment: Environment.toRecord(environment),
 			input: request.body ?? undefined,
 		})

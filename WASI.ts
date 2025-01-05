@@ -65,9 +65,6 @@ export class WASI {
 			await entrypoint()
 			// }
 		} catch (e) {
-			if (!this.#returnOnExit) {
-				throw e
-			}
 			if ((e as Error).message === "unreachable") {
 				return 134
 			} else if (e instanceof ProcessExit) {
