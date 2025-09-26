@@ -1,7 +1,8 @@
 {
 	"files.exclude": {
 		".*": true,
-		"*.json": true,
+		"*.json": false,
+		"package-lock.json": true,
 		"dist": true,
 		"README.md": true,
 		"LICENSE": true,
@@ -12,6 +13,7 @@
 		"*.config.js": true,
 		"*.toml": false,
 		"stencil.config.ts": false,
+		"LICENSE.md": true
 	},
 	"editor.tabSize": 2,
 	"editor.detectIndentation": false,
@@ -21,8 +23,6 @@
 		"eslint.autoFixOnSave": "explicit"
 	},
 	"editor.formatOnSave": true,
-	"eslint.format.enable": true,
-	"eslint.lintTask.enable": true,
 	"files.insertFinalNewline": true,
 	"javascript.format.enable": false,
 	"typescript.format.enable": false,
