@@ -25,7 +25,6 @@
 		"build": "rimraf dist/* && tsc -p tsconfig.mjs.json && tsc -p tsconfig.cjs.json && make && npm run copy",
 		"copy": "cp memfs/memfs.wasm dist/mjs/memfs/",
 		"test": "vitest --run",
-		"coverage": "vitest --coverage",
 		"prepare": "npm run build",
 		"clean": "rimraf dist node_modules coverage",
 		"verify": "npm run build && npm run test && npm run lint && npm audit"

@@ -1,0 +1,32 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "wasily-test-worker",
+	"main": "./index.ts",
+	"compatibility_date": "2025-09-26",
+	"minify": false,
+	"tsconfig": "./tsconfig.json",
+	"upload_source_maps": true,
+	"workers_dev": true,
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	"build": {
+		"command": "npm run transpile"
+	},
+	"dev": {
+		"host": "example.com",
+		"port": 8787
+	},
+	"vars": {},
+	"version_metadata": {
+		"binding": "version"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "kvStore",
+			"id": "aaaaa",
+			"preview_id": "aaaaa"
+		}
+	]
+}
