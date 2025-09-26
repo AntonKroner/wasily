@@ -42,6 +42,7 @@
 		"littlefs",
 		"paramly",
 		"persistly",
+		"retptr",
 		"servly",
 		"uply",
 		"wasi",

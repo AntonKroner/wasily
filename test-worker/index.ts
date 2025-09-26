@@ -7,8 +7,8 @@ export default {
 	async fetch(request: Request, environment: Environment, execution: ExecutionContext) {
 		const argument = [...request.headers.entries()].reduce<string[]>(
 			(result, [key, value]) => {
-				result.push(`--${key}`)
-				result.push(value)
+				result.push(`--${key}`, value)
+				// result.push(value)
 				return result
 			},
 			[request.url, "--method", request.method]

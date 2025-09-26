@@ -1,3 +1,4 @@
+// import * as platform from "@cloudflare/workers-types"
 import * as utility from "@tybys/wasm-util"
 import { FileDescriptor } from "./FileDescriptor"
 import { Imports } from "./Imports"
@@ -21,6 +22,9 @@ export class Instance {
 		return this.#asyncifiedInstance
 	}
 	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
+		console.log("exports: ", WebAssembly.Module.exports(module))
+		console.log("imports: ", WebAssembly.Module.imports(module))
+
 		options?.imports && (this.#imports = options?.imports)
 		options?.default?.env && (this.#imports["env"] = new Imports.Env())
 		options?.input && (this.input = options.input)
@@ -31,7 +35,6 @@ export class Instance {
 			streamStdio: true,
 			returnOnExit: true,
 		})
-
 		const asyncify = new utility.Asyncify()
 		const instance = new WebAssembly.Instance(module, {
 			...asyncify.wrapImports({
