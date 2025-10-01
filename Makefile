@@ -1,7 +1,7 @@
 # disable built-in rules
 .SUFFIXES:
 
-WASI_SDK_PATH := ../../wasi-sdk-25.0
+WASI_SDK_PATH := ../../wasi-sdk-27.0
 WASI_SYSROOT  := $(abspath ${WASI_SDK_PATH}/share/wasi-sysroot)
 export CC      := $(abspath ${WASI_SDK_PATH}/bin/clang) -target wasm32-wasi --sysroot=${WASI_SYSROOT}
 export CFLAGS  := -Oz -flto -I ./deps/rapidjson/include -I./deps/littlefs -fno-exceptions -include ./memfs/config.h

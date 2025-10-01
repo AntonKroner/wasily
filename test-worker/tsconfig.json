@@ -7,7 +7,8 @@
 		],
 		"types": [
 			"./Cloudflare.d.ts",
-			"./main.d.ts"
+			"./main.d.ts",
+			"node"
 		],
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,

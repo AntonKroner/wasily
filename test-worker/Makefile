@@ -1,4 +1,4 @@
-WASI_SDK_PATH = ../../../wasi-sdk-25.0
+WASI_SDK_PATH = ../../../wasi-sdk-27.0
 CC = ${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot
 LD = ${WASI_SDK_PATH}/bin/clang
 WASILY = ./node_modules/wasily

@@ -7,7 +7,7 @@
 		"README.md": true,
 		"LICENSE": true,
 		"CODEOWNERS": true,
-		"**/tsconfig.*": true,
+		"**/tsconfig.*": false,
 		"node_modules": true,
 		"*.code-workspace": true,
 		"*.config.js": true,
