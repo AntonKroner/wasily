@@ -37,7 +37,7 @@
 		"types": [
 			"./memfs/memfs.d.ts",
 			"vitest/globals",
-			"./Imports/jspi.d.ts",
+			"./jspi.d.ts",
 		]
 	},
 	"include": [

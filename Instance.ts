@@ -1,12 +1,9 @@
-// import * as platform from "@cloudflare/workers-types"
-// import * as utility from "@tybys/wasm-util"
 import { FileDescriptor } from "./FileDescriptor"
 import { Imports } from "./Imports"
 import { ProcessExit } from "./ProcessExit"
 
 export class Instance {
 	readonly exports: Record<string, (...args: any[]) => number | Promise<number>> = {}
-	// #asyncifiedInstance: WebAssembly.Instance
 	#imports: Record<string, Imports> = {}
 	#stdout: TransformStream = new TransformStream()
 	#stderr: TransformStream = new TransformStream()
@@ -36,7 +33,7 @@ export class Instance {
 			...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
 			wasi_snapshot_preview1: {
 				...wasi.open(),
-				// clock_time_get: asyncify.wrapImportFunction(this.#clock_time_get.bind(this)),
+				clock_time_get: new WebAssembly.Suspending(this.#clock_time_get.bind(this)),
 				fd_read: this.#fd_read.bind(this),
 				fd_write: this.#fd_write.bind(this),
 			},

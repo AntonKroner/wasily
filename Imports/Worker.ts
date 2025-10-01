@@ -11,23 +11,22 @@ export class Worker<
 		super()
 	}
 
-	open(): Record<string, WebAssembly.Suspending | ((...args: any[]) => number | Promise<number>)> {
-		// const a = new WebAssembly.Suspending()
-		const result: ReturnType<Worker<Environment>["open"]> = {
+	open(): Record<string, WebAssembly.Suspending | ((...args: any[]) => number)> {
+		const result: ReturnType<Imports["open"]> = {
 			log: this.#log.bind(this),
 			logNumber: this.#logNumber.bind(this),
 			random: this.#random.bind(this),
-			sleep: this.#sleep.bind(this),
+			sleep: new WebAssembly.Suspending(this.#sleep.bind(this)),
 			loop: this.#loop.bind(this),
 			KVNamespace_getText: new WebAssembly.Suspending(this.#KVNamespace_getText.bind(this)),
-			KVNamespace_getArrayBuffer: this.#KVNamespace_getArrayBuffer.bind(this),
+			KVNamespace_getArrayBuffer: new WebAssembly.Suspending(this.#KVNamespace_getArrayBuffer.bind(this)),
 			KVNamespace_putText: new WebAssembly.Suspending(this.#KVNamespace_putText.bind(this)),
-			KVNamespace_putArrayBuffer: this.#KVNamespace_putArrayBuffer.bind(this),
-			KVNamespace_list: this.#KVNamespace_list.bind(this),
-			KVNamespace_delete: this.#KVNamespace_delete.bind(this),
+			KVNamespace_putArrayBuffer: new WebAssembly.Suspending(this.#KVNamespace_putArrayBuffer.bind(this)),
+			KVNamespace_list: new WebAssembly.Suspending(this.#KVNamespace_list.bind(this)),
+			KVNamespace_delete: new WebAssembly.Suspending(this.#KVNamespace_delete.bind(this)),
 			DurableObject_Namespace_idFromName: this.#DurableObject_Namespace_idFromName.bind(this),
 			DurableObject_Namespace_newUniqueId: this.#DurableObject_Namespace_newUniqueId.bind(this),
-			DurableObject_Stub_fetch: this.#DurableObject_Stub_fetch.bind(this),
+			DurableObject_Stub_fetch: new WebAssembly.Suspending(this.#DurableObject_Stub_fetch.bind(this)),
 		}
 		return result
 	}

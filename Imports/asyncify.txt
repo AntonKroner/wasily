@@ -1,1 +1,0 @@
-env.emscripten_set_main_loop_arg,wasi_snapshot_preview1.clock_time_get

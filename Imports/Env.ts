@@ -1,8 +1,8 @@
 import { Imports } from "./Imports"
 
 export class Env extends Imports {
-	open(): Record<string, (...args: any[]) => number | Promise<number>> {
-		const result: Record<string, (...args: any[]) => number | Promise<number>> = {
+	open(): Record<string, WebAssembly.Suspending | ((...args: any[]) => number)> {
+		const result: ReturnType<Imports["open"]> = {
 			fiprintf: this.#fiprintf.bind(this),
 			pthread_mutex_lock: this.#pthread_mutex_lock.bind(this),
 			pthread_mutex_unlock: this.#pthread_mutex_unlock.bind(this),

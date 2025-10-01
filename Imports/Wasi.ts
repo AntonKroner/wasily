@@ -37,8 +37,8 @@ export class Wasi extends Imports {
 		console.log("WASI 5")
 	}
 
-	open(): Record<keyof wasi.SnapshotPreview1, (...args: any[]) => number | Promise<number>> {
-		const result: Record<keyof wasi.SnapshotPreview1, (...args: any[]) => number | Promise<number>> = {
+	open(): Record<keyof wasi.SnapshotPreview1, WebAssembly.Suspending | ((...args: any[]) => number)> {
+		const result: ReturnType<Wasi["open"]> = {
 			args_get: this.#args_get.bind(this),
 			args_sizes_get: this.#args_sizes_get.bind(this),
 			clock_res_get: this.#clock_res_get.bind(this),
@@ -59,13 +59,13 @@ export class Wasi extends Imports {
 			fd_prestat_dir_name: this.#memfs.exports.fd_prestat_dir_name.bind(this),
 			fd_prestat_get: this.#memfs.exports.fd_prestat_get.bind(this),
 			fd_pwrite: this.#memfs.exports.fd_pwrite.bind(this),
-			fd_read: this.#fd_read.bind(this),
+			fd_read: new WebAssembly.Suspending(this.#fd_read.bind(this)),
 			fd_readdir: this.#memfs.exports.fd_readdir.bind(this),
 			fd_renumber: this.#memfs.exports.fd_renumber.bind(this),
 			fd_seek: this.#memfs.exports.fd_seek.bind(this),
 			fd_sync: this.#memfs.exports.fd_sync.bind(this),
 			fd_tell: this.#memfs.exports.fd_tell.bind(this),
-			fd_write: this.#fd_write.bind(this),
+			fd_write: new WebAssembly.Suspending(this.#fd_write.bind(this)),
 			path_create_directory: this.#memfs.exports.path_create_directory.bind(this),
 			path_filestat_get: this.#memfs.exports.path_filestat_get.bind(this),
 			path_filestat_set_times: this.#memfs.exports.path_filestat_set_times.bind(this),
