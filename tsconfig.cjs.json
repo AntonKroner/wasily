@@ -4,8 +4,7 @@
 		"module": "CommonJS",
 		// where cjs is omitted. point package.json `exports` (require) field to these.
 		// if a `main` field is declared in package.json point it to these as well.
-		"outDir": "dist/cjs",
-		"types": []
+		"outDir": "dist/cjs"
 	},
 	"exclude": [
 		"**/*.spec.ts"

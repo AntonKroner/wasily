@@ -17,7 +17,7 @@ all: $(BUILD) $(WASM)
 $(BUILD):
 	mkdir -p ./$@/
 $(WASM): $(BUILD)/$(UNOPT)
-	wasm-opt -O2 --asyncify --pass-arg asyncify-imports@@$(WASILY)/Imports/asyncify.txt $< -o $@
+	wasm-opt -O2 $< -o $@
 $(BUILD)/$(UNOPT): $(OBJECTS)
 	$(LD) $(LDFLAGS) $(OBJECTS) $(LIBRARIES) -o $@
 $(BUILD)/main.o: main.c

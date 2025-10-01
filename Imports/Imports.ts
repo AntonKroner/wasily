@@ -41,5 +41,5 @@ export abstract class Imports {
 		const buffer = new Uint8Array(this.buffer)
 		buffer.set(this.encoder.encode(`${data}\0`), pointer)
 	}
-	abstract open(): Record<string, (...args: any[]) => number | Promise<number>>
+	abstract open(): Record<string, WebAssembly.Suspending | ((...args: any[]) => number | Promise<number>)>
 }

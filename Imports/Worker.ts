@@ -11,16 +11,17 @@ export class Worker<
 		super()
 	}
 
-	open(): Record<string, (...args: any[]) => number | Promise<number>> {
-		const result: Record<string, (...args: any[]) => number | Promise<number>> = {
+	open(): Record<string, WebAssembly.Suspending | ((...args: any[]) => number | Promise<number>)> {
+		// const a = new WebAssembly.Suspending()
+		const result: ReturnType<Worker<Environment>["open"]> = {
 			log: this.#log.bind(this),
 			logNumber: this.#logNumber.bind(this),
 			random: this.#random.bind(this),
 			sleep: this.#sleep.bind(this),
 			loop: this.#loop.bind(this),
-			KVNamespace_getText: this.#KVNamespace_getText.bind(this),
+			KVNamespace_getText: new WebAssembly.Suspending(this.#KVNamespace_getText.bind(this)),
 			KVNamespace_getArrayBuffer: this.#KVNamespace_getArrayBuffer.bind(this),
-			KVNamespace_putText: this.#KVNamespace_putText.bind(this),
+			KVNamespace_putText: new WebAssembly.Suspending(this.#KVNamespace_putText.bind(this)),
 			KVNamespace_putArrayBuffer: this.#KVNamespace_putArrayBuffer.bind(this),
 			KVNamespace_list: this.#KVNamespace_list.bind(this),
 			KVNamespace_delete: this.#KVNamespace_delete.bind(this),
