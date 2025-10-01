@@ -1,6 +1,7 @@
 import * as platform from "@cloudflare/workers-types"
 import { bool } from "./bool"
 import { Imports } from "./Imports"
+import { Loop } from "./Loop"
 import { Method } from "./Method"
 
 export class Worker<
@@ -16,6 +17,7 @@ export class Worker<
 			logNumber: this.#logNumber.bind(this),
 			random: this.#random.bind(this),
 			sleep: this.#sleep.bind(this),
+			loop: this.#loop.bind(this),
 			KVNamespace_getText: this.#KVNamespace_getText.bind(this),
 			KVNamespace_getArrayBuffer: this.#KVNamespace_getArrayBuffer.bind(this),
 			KVNamespace_putText: this.#KVNamespace_putText.bind(this),
@@ -145,5 +147,15 @@ export class Worker<
 			result = 1
 		}
 		return result
+	}
+	#loop(func: number, arg: number, fps: number, infinite: number): 0 {
+		let iterator: () => void
+		if (!(this.exports["__indirect_function_table"] instanceof WebAssembly.Table))
+			throw new Error("__indirect_function_table not fond in exports")
+		else if (typeof (iterator = this.exports["__indirect_function_table"].get(func)) != "function")
+			throw new Error(`function index ${func} was not found in the table`)
+		else
+			Loop.set(iterator, fps, infinite, arg)
+		return 0
 	}
 }

@@ -24,7 +24,6 @@ export class Instance {
 	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
 		console.log("exports: ", WebAssembly.Module.exports(module))
 		console.log("imports: ", WebAssembly.Module.imports(module))
-
 		options?.imports && (this.#imports = options?.imports)
 		options?.default?.env && (this.#imports["env"] = new Imports.Env())
 		options?.input && (this.input = options.input)

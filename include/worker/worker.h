@@ -59,6 +59,11 @@ extern double worker_random()
   __attribute__((__import_module__("worker"), __import_name__("random")));
 WORKER_ASYNC extern double worker_sleep(const double delay)
   __attribute__((__import_module__("worker"), __import_name__("sleep")));
+typedef void (*worker_loop_function)(void*);
+// adapted from emscripten_set_main_loop_arg
+// rate <= 0 will default to 60
+extern void worker_loop(worker_loop_function function, void* arg, int rate, bool infinite)
+  __attribute__((__import_module__("worker"), __import_name__("loop")));
 WORKER_ASYNC extern bool worker_KVNamespace_getText(
   const char* namespace,
   const char* key,

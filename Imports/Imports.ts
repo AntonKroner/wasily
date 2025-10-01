@@ -6,18 +6,14 @@ export abstract class Imports {
 		this.#memory = memory
 	}
 	protected get buffer(): ArrayBuffer {
-		return this.#memory
-			? this.#memory.buffer
-			: (() => {
-					throw new Error("Buffer get.")
-			  })()
+		if (!this.#memory)
+			throw new Error("Buffer get.")
+		return this.#memory.buffer
 	}
 	protected view(): DataView {
-		return this.#memory
-			? new DataView(this.#memory.buffer)
-			: (() => {
-					throw new Error("view()")
-			  })()
+		if (!this.#memory)
+			throw new Error("view()")
+		return new DataView(this.#memory.buffer)
 	}
 	#decoder?: TextDecoder
 	protected get decoder(): TextDecoder {
@@ -26,6 +22,15 @@ export abstract class Imports {
 	#encoder?: TextEncoder
 	protected get encoder(): TextEncoder {
 		return (this.#encoder ??= new TextEncoder())
+	}
+	#exports?: WebAssembly.Exports
+	set exports(exports: WebAssembly.Exports) {
+		this.#exports = exports
+	}
+	get exports(): WebAssembly.Exports {
+		if (!this.#exports)
+			throw new Error("exports unset")
+		return this.#exports
 	}
 
 	fromCharPointer(pointer: number): string {
