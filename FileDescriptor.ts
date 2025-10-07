@@ -2,8 +2,8 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 export interface FileDescriptor {
-	writev(iovs: Array<Uint8Array>): number
-	readv(iovs: Array<Uint8Array>): number
+	writev(iovs: Array<Uint8Array>): number | Promise<number>
+	readv(iovs: Array<Uint8Array>): number | Promise<number>
 	close(): void
 	preRun(): Promise<void>
 	postRun(): Promise<void>
@@ -35,7 +35,6 @@ class WritableStreamBase {
 	async preRun(): Promise<void> {}
 	async postRun(): Promise<void> {}
 }
-
 class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
 	#writer: WritableStreamDefaultWriter
 	#buffer: Uint8Array = new Uint8Array(4096)
@@ -74,7 +73,27 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 		this.#writer.close()
 	}
 }
+class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
+	#writer: WritableStreamDefaultWriter
+	constructor(writer: WritableStreamDefaultWriter) {
+		super()
+		this.#writer = writer
+	}
 
+	async writev(iovs: Array<Uint8Array>): Promise<number> {
+		let written = 0
+		for (const iov of iovs) {
+			if (iov.byteLength) {
+				this.#writer.write(iov)
+				written += iov.byteLength
+			}
+		}
+		return written
+	}
+	override async close(): Promise<void> {
+		this.#writer.close()
+	}
+}
 class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {
 	#buffer?: Uint8Array
 	#reader: ReadableStreamDefaultReader
@@ -113,11 +132,50 @@ class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescri
 		this.#buffer = result
 	}
 }
-export namespace FileDescriptor {
-	export function fromReadableStream(stream?: ReadableStream): FileDescriptor {
-		return stream ? new SyncReadableStreamAdapter(stream.getReader()) : new DevNull()
+class AsyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {
+	#pending = new Uint8Array()
+	#reader: ReadableStreamDefaultReader
+	constructor(reader: ReadableStreamDefaultReader) {
+		super()
+		this.#reader = reader
 	}
-	export function fromWritableStream(stream?: WritableStream): FileDescriptor {
-		return stream ? new SyncWritableStreamAdapter(stream.getWriter()) : new DevNull()
+
+	async readv(iovs: Array<Uint8Array>): Promise<number> {
+		let read = 0
+		for (let iov of iovs) {
+			while (iov.byteLength > 0) {
+				// pull only if pending queue is empty
+				if (this.#pending.byteLength === 0) {
+					const result = await this.#reader.read()
+					if (result.done) {
+						return read
+					}
+					this.#pending = result.value
+				}
+				const bytes = Math.min(iov.byteLength, this.#pending.byteLength)
+				iov.set(this.#pending!.subarray(0, bytes))
+				this.#pending = this.#pending!.subarray(bytes)
+				read += bytes
+
+				iov = iov.subarray(bytes)
+			}
+		}
+		return read
+	}
+}
+export namespace FileDescriptor {
+	export function fromReadableStream(stream?: ReadableStream, async?: boolean): FileDescriptor {
+		return !stream
+			? new DevNull()
+			: async
+			? new AsyncReadableStreamAdapter(stream.getReader())
+			: new SyncReadableStreamAdapter(stream.getReader())
+	}
+	export function fromWritableStream(stream?: WritableStream, async?: boolean): FileDescriptor {
+		return !stream
+			? new DevNull()
+			: async
+			? new AsyncWritableStreamAdapter(stream.getWriter())
+			: new SyncWritableStreamAdapter(stream.getWriter())
 	}
 }

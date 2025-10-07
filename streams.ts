@@ -1,4 +1,5 @@
-// import * as wasi from "./snapshot_preview1"
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-empty-function */
 
 export interface FileDescriptor {
 	writev(iovs: Array<Uint8Array>): Promise<number> | number
@@ -77,13 +78,13 @@ class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescr
 			if (iov.byteLength === 0) {
 				continue
 			}
-			await this.#writer.write(iov)
+			this.#writer.write(iov)
 			written += iov.byteLength
 		}
 		return written
 	}
 	override async close(): Promise<void> {
-		await this.#writer.close()
+		this.#writer.close()
 	}
 }
 class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
@@ -120,8 +121,8 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 	}
 	override async postRun(): Promise<void> {
 		const slice = this.#buffer.subarray(0, this.#bytesWritten)
-		await this.#writer.write(slice)
-		await this.#writer.close()
+		this.#writer.write(slice)
+		this.#writer.close()
 	}
 }
 class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {

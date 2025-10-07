@@ -1,10 +1,9 @@
 export { traceImportsToConsole } from "../helpers"
-// import * as utility from "@tybys/wasm-util"
 import * as platform from "@cloudflare/workers-types"
+import { FileDescriptor } from "../FileDescriptor"
 import { _FS, MemFS } from "../memfs"
 import { ProcessExit } from "../ProcessExit"
 import * as wasi from "../snapshot_preview1"
-import { FileDescriptor, fromReadableStream, fromWritableStream } from "../streams"
 import { Imports } from "./Imports"
 
 export class Wasi extends Imports {
@@ -14,25 +13,21 @@ export class Wasi extends Imports {
 	}
 	#args: Array<string>
 	#env: Array<string>
-	#streams: Array<FileDescriptor>
+	streams: Array<FileDescriptor>
 	#memfs: MemFS = new MemFS([], {})
-	#asyncify: boolean
 	constructor(options?: Wasi.Options) {
 		super()
-		console.log("WASI 1")
+		// console.log("WASI 1")
 		this.#args = options?.args ?? []
-		const env = options?.env ?? {}
-		console.log("WASI 2")
-		this.#env = Object.entries(env).map(([key, value]) => `${key}=${value}`)
-		console.log("WASI 3")
-		this.#asyncify = options?.streamStdio ?? false
-		console.log("WASI 4")
-		this.#streams = [
-			fromReadableStream(options?.stdin, this.#asyncify),
-			fromWritableStream(options?.stdout, this.#asyncify),
-			fromWritableStream(options?.stderr, this.#asyncify),
+		// console.log("WASI 2")
+		this.#env = Object.entries(options?.env ?? {}).map(([key, value]) => `${key}=${value}`)
+		// console.log("WASI 3")
+		this.streams = [
+			FileDescriptor.fromReadableStream(options?.stdin, options?.streamStdio ?? false),
+			FileDescriptor.fromWritableStream(options?.stdout, options?.streamStdio ?? false),
+			FileDescriptor.fromWritableStream(options?.stderr, options?.streamStdio ?? false),
 		]
-		console.log("WASI 5")
+		// console.log("WASI 5")
 	}
 
 	open(): Record<keyof wasi.SnapshotPreview1, WebAssembly.Suspending | ((...args: any[]) => number)> {
@@ -146,7 +141,7 @@ export class Wasi extends Imports {
 	}
 	#fd_read(fd: number, iovs_ptr: number, iovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
-			const desc = this.#streams[fd]
+			const desc = this.streams[fd]
 			const view = this.view()
 			const iovs = wasi.iovViews(view, iovs_ptr, iovs_len)
 			const result = desc!.readv(iovs)
@@ -164,7 +159,7 @@ export class Wasi extends Imports {
 	}
 	#fd_write(fd: number, ciovs_ptr: number, ciovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
-			const desc = this.#streams[fd]
+			const desc = this.streams[fd]
 			const view = this.view()
 			const iovs = wasi.iovViews(view, ciovs_ptr, ciovs_len)
 			const result = desc!.writev(iovs)
@@ -221,8 +216,6 @@ export namespace Wasi {
 		args?: string[]
 		/*** Environment variables** @defaultValue `{}`**/
 		env?: Record<string, string>
-		/*** By default WASI applications that call `proc_exit` will throw a {@link ProcessExit} exception, setting this option to true will cause {@link Wasi.start} to return the the exit code instead.** @defaultValue `false`**/
-		returnOnExit?: boolean
 		/*** A list of directories that will be accessible in the WebAssembly application's sandbox.** @defaultValue `[]`**/
 		preopens?: string[]
 		/*** Input stream that the application will be able to read from via stdin*/

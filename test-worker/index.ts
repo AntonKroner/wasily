@@ -25,13 +25,6 @@ export default {
 			},
 			[request.url, "--method", request.method]
 		)
-
-		// const wasi = new wasily.Imports.Wasi({
-		// 	args: argument,
-		// 	env: Environment.toRecord(environment),
-		// 	streamStdio: true,
-		// 	returnOnExit: true,
-		// })
 		const instance = wasily.Instance.open(main, {
 			arguments: argument,
 			default: { env: true },
@@ -40,7 +33,7 @@ export default {
 			input: request.body ?? undefined,
 		})
 		const result = await instance.run()
-		execution.waitUntil(decode(result.error).then(er => er.length && console.log("error: ", er)))
+		execution.waitUntil(decode(result.error).then(e => e.length && console.log("error: ", e)))
 		console.log("thingy: ", Object.keys(environment.kvStore ?? {}))
 		return new Response(result.out)
 	},
