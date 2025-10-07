@@ -1,4 +1,3 @@
-// import * as utility from "@tybys/wasm-util"
 import { wasily } from "wasily"
 import { Environment } from "./Environment"
 import main from "./main.wasm"
