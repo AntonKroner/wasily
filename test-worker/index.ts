@@ -19,11 +19,9 @@ export default {
 
 		// const wasm = Object.getOwnPropertyDescriptors(WebAssembly)
 		// console.log({ wasm })
-
 		const argument = [...request.headers.entries()].reduce<string[]>(
 			(result, [key, value]) => {
 				result.push(`--${key}`, value)
-				// result.push(value)
 				return result
 			},
 			[request.url, "--method", request.method]

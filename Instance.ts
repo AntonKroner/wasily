@@ -19,7 +19,7 @@ export class Instance {
 	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
 		console.log("exports: ", WebAssembly.Module.exports(module))
 		console.log("imports: ", WebAssembly.Module.imports(module))
-		options?.imports && (this.#imports = options?.imports)
+		options?.imports && (this.#imports = options.imports)
 		options?.default?.env && (this.#imports["env"] = new Imports.Env())
 		options?.input && (this.input = options.input)
 
@@ -38,9 +38,6 @@ export class Instance {
 				fd_write: this.#fd_write.bind(this),
 			},
 		})
-		// this.#asyncifiedInstance = asyncify.init(instance.exports.memory as WebAssembly.Memory, instance, {
-		// 	wrapExports: ["_start"].concat(options?.exports ?? []),
-		// })
 		console.log("instance: ", this.instance)
 		console.log("instance.exports: ", this.instance.exports)
 		options?.exports?.forEach(
@@ -129,11 +126,9 @@ export class Instance {
 		return result
 	}
 	#view(): DataView {
-		return this.instance.exports.memory
-			? new DataView((this.instance.exports.memory as WebAssembly.Memory).buffer)
-			: (() => {
-					throw new Error("#view()")
-			  })()
+		if (!this.instance.exports.memory)
+			throw new Error("#view()")
+		return new DataView((this.instance.exports.memory as WebAssembly.Memory).buffer)
 	}
 
 	static open(module: WebAssembly.Module, options?: Partial<Instance.Options>): Instance {

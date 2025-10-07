@@ -23,9 +23,7 @@ export class Wasi extends Imports {
 		this.#args = options?.args ?? []
 		const env = options?.env ?? {}
 		console.log("WASI 2")
-		this.#env = Object.keys(env).map(key => {
-			return `${key}=${env[key]}`
-		})
+		this.#env = Object.entries(env).map(([key, value]) => `${key}=${value}`)
 		console.log("WASI 3")
 		this.#asyncify = options?.streamStdio ?? false
 		console.log("WASI 4")

@@ -9,7 +9,7 @@ export class DurableObject<
 		super()
 	}
 
-	open(): Record<string, WebAssembly.Suspending | ((...args: any[]) => number)> {
+	open(): ReturnType<Imports["open"]> {
 		const result: ReturnType<Imports["open"]> = {
 			State_id: this.#State_id.bind(this),
 			State_Storage_put: new WebAssembly.Suspending(this.#State_Storage_put.bind(this)),
