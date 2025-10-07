@@ -1,5 +1,4 @@
 export { traceImportsToConsole } from "./helpers"
-// import * as utility from "@tybys/wasm-util"
 import { _FS, MemFS } from "./memfs"
 import { ProcessExit } from "./ProcessExit"
 import * as wasi from "./snapshot_preview1"

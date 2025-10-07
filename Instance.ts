@@ -1,12 +1,9 @@
-// import * as platform from "@cloudflare/workers-types"
-import * as utility from "@tybys/wasm-util"
 import { FileDescriptor } from "./FileDescriptor"
 import { Imports } from "./Imports"
 import { ProcessExit } from "./ProcessExit"
 
 export class Instance {
 	readonly exports: Record<string, (...args: any[]) => number | Promise<number>> = {}
-	#asyncifiedInstance: WebAssembly.Instance
 	#imports: Record<string, Imports> = {}
 	#stdout: TransformStream = new TransformStream()
 	#stderr: TransformStream = new TransformStream()
@@ -18,13 +15,11 @@ export class Instance {
 	set input(stream: ReadableStream) {
 		this.#streams[0] = FileDescriptor.fromReadableStream(stream)
 	}
-	get instance(): WebAssembly.Instance {
-		return this.#asyncifiedInstance
-	}
+	readonly instance: WebAssembly.Instance
 	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
 		console.log("exports: ", WebAssembly.Module.exports(module))
 		console.log("imports: ", WebAssembly.Module.imports(module))
-		options?.imports && (this.#imports = options?.imports)
+		options?.imports && (this.#imports = options.imports)
 		options?.default?.env && (this.#imports["env"] = new Imports.Env())
 		options?.input && (this.input = options.input)
 
@@ -34,31 +29,24 @@ export class Instance {
 			streamStdio: true,
 			returnOnExit: true,
 		})
-		const asyncify = new utility.Asyncify()
-		const instance = new WebAssembly.Instance(module, {
-			...asyncify.wrapImports({
-				...options?.emscriptenImports,
-				...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
-			}),
+		this.instance = new WebAssembly.Instance(module, {
+			...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
 			wasi_snapshot_preview1: {
 				...wasi.open(),
-				clock_time_get: asyncify.wrapImportFunction(this.#clock_time_get.bind(this)),
+				clock_time_get: new WebAssembly.Suspending(this.#clock_time_get.bind(this)),
 				fd_read: this.#fd_read.bind(this),
 				fd_write: this.#fd_write.bind(this),
 			},
 		})
-		this.#asyncifiedInstance = asyncify.init(instance.exports.memory as WebAssembly.Memory, instance, {
-			wrapExports: ["_start"].concat(options?.exports ?? []),
-		})
+		console.log("instance: ", this.instance)
+		console.log("instance.exports: ", this.instance.exports)
 		options?.exports?.forEach(
 			e =>
-				typeof this.#asyncifiedInstance.exports[e] == "function" &&
-				(this.exports[e] = this.#asyncifiedInstance.exports[e] as () => number)
+				typeof this.instance.exports[e] == "function" &&
+				(this.exports[e] = WebAssembly.promising(this.instance.exports[e] as () => number))
 		)
-		Object.values(this.#imports).forEach(
-			n => (n.memory = this.#asyncifiedInstance.exports.memory as WebAssembly.Memory)
-		)
-		wasi.memory = this.#asyncifiedInstance.exports.memory as WebAssembly.Memory
+		Object.values(this.#imports).forEach(n => (n.memory = this.instance.exports.memory as WebAssembly.Memory))
+		wasi.memory = this.instance.exports.memory as WebAssembly.Memory
 	}
 
 	resetStreams(): void {
@@ -73,7 +61,7 @@ export class Instance {
 		let error: number | undefined = undefined
 		try {
 			// eslint-disable-next-line @typescript-eslint/ban-types
-			const entrypoint = this.#asyncifiedInstance.exports._start as Function
+			const entrypoint = WebAssembly.promising(this.instance.exports._start as any)
 			const result = await entrypoint()
 			console.log("result: ", result)
 			// }
@@ -138,11 +126,9 @@ export class Instance {
 		return result
 	}
 	#view(): DataView {
-		return this.#asyncifiedInstance.exports.memory
-			? new DataView((this.#asyncifiedInstance.exports.memory as WebAssembly.Memory).buffer)
-			: (() => {
-					throw new Error("#view()")
-			  })()
+		if (!this.instance.exports.memory)
+			throw new Error("#view()")
+		return new DataView((this.instance.exports.memory as WebAssembly.Memory).buffer)
 	}
 
 	static open(module: WebAssembly.Module, options?: Partial<Instance.Options>): Instance {
@@ -167,7 +153,6 @@ export namespace Instance {
 		environment: Record<string, string>
 		default: { env: boolean }
 		imports: Record<string, Imports>
-		emscriptenImports: WebAssembly.Imports
 		exports: string[]
 	}
 }

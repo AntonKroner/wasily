@@ -9,13 +9,13 @@ export class DurableObject<
 		super()
 	}
 
-	open(): Record<string, (...args: any[]) => number | Promise<number>> {
-		const result: Record<string, (...args: any[]) => number | Promise<number>> = {
+	open(): ReturnType<Imports["open"]> {
+		const result: ReturnType<Imports["open"]> = {
 			State_id: this.#State_id.bind(this),
-			State_Storage_put: this.#State_Storage_put.bind(this),
-			State_Storage_get: this.#State_Storage_get.bind(this),
-			State_Storage_list: this.#State_Storage_list.bind(this),
-			State_Storage_delete: this.#State_Storage_delete.bind(this),
+			State_Storage_put: new WebAssembly.Suspending(this.#State_Storage_put.bind(this)),
+			State_Storage_get: new WebAssembly.Suspending(this.#State_Storage_get.bind(this)),
+			State_Storage_list: new WebAssembly.Suspending(this.#State_Storage_list.bind(this)),
+			State_Storage_delete: new WebAssembly.Suspending(this.#State_Storage_delete.bind(this)),
 		}
 		return result
 	}

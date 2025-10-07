@@ -16,11 +16,11 @@
 		"eslint-plugin-simple-import-sort": "12.1.1",
 		"prettierx": "github:utily/prettierx#utily-20231004",
 		"tslib": "2.8.1",
-		"typescript": "^5.7.2",
-		"wrangler": "4.40.3"
+		"typescript": "5.9.3",
+		"wrangler": "4.42.1"
 	},
 	"dependencies": {
-		"@types/node": "^24.6.1",
+		"@types/node": "24.7.0",
 		"wasily": "file:.."
 	}
 }

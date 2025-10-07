@@ -3,7 +3,7 @@
 		// https://www.totaltypescript.com/tsconfig-cheat-sheet
 		/* transpiling */
 		"lib": [
-			"ES2023",
+			"ESNext",
 			"webworker"
 		],
 		"moduleResolution": "node10",
@@ -15,7 +15,7 @@
 		/* base options */
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"target": "ES2022",
+		"target": "esnext",
 		"allowJs": true,
 		"resolveJsonModule": true,
 		/* strictness */
@@ -36,7 +36,8 @@
 		"baseUrl": ".",
 		"types": [
 			"./memfs/memfs.d.ts",
-			"vitest/globals"
+			"vitest/globals",
+			"./jspi.d.ts",
 		]
 	},
 	"include": [

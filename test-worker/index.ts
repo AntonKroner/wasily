@@ -1,14 +1,26 @@
-// import * as utility from "@tybys/wasm-util"
 import { wasily } from "wasily"
 import { Environment } from "./Environment"
 import main from "./main.wasm"
 
 export default {
 	async fetch(request: Request, environment: Environment, execution: ExecutionContext) {
+		// const a = (WebAssembly as any).Suspending //(() => 0)
+		// console.log({ a })
+		// console.log({ "typeof a": typeof a })
+		// const suspending = Object.getOwnPropertyDescriptors(a)
+		// console.log({ suspending })
+
+		// const b = (WebAssembly as any).promising //(() => 0)
+		// console.log({ b })
+		// console.log({ "typeof b": typeof b })
+		// const promising = Object.getOwnPropertyDescriptors(b)
+		// console.log({ promising })
+
+		// const wasm = Object.getOwnPropertyDescriptors(WebAssembly)
+		// console.log({ wasm })
 		const argument = [...request.headers.entries()].reduce<string[]>(
 			(result, [key, value]) => {
 				result.push(`--${key}`, value)
-				// result.push(value)
 				return result
 			},
 			[request.url, "--method", request.method]
