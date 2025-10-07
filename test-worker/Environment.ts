@@ -9,6 +9,6 @@ export interface Environment
 }
 export namespace Environment {
 	export function toRecord(environment: Environment): Record<string, string> {
-		return Object.fromEntries(Object.entries(environment).map(([key, value]) => [key, value?.toString() ?? ""]))
+		return Object.fromEntries(Object.entries(environment).map(([key, value]) => [key, JSON.stringify(value)]))
 	}
 }

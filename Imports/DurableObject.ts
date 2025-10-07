@@ -48,3 +48,4 @@ export class DurableObject<
 		return !(await this.state.storage.delete(this.fromCharPointer(key))) ? 0 : 1
 	}
 }
+export namespace DurableObject {}

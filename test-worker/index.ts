@@ -25,6 +25,7 @@ export default {
 			},
 			[request.url, "--method", request.method]
 		)
+
 		// const wasi = new wasily.Imports.Wasi({
 		// 	args: argument,
 		// 	env: Environment.toRecord(environment),
@@ -40,6 +41,7 @@ export default {
 		})
 		const result = await instance.run()
 		execution.waitUntil(decode(result.error).then(er => er.length && console.log("error: ", er)))
+		console.log("thingy: ", Object.keys(environment.kvStore ?? {}))
 		return new Response(result.out)
 	},
 }
@@ -51,4 +53,9 @@ export async function decode(stream: ReadableStream<Uint8Array>): Promise<string
 	while (!(read = await reader.read()).done)
 		result += decoder.decode(read.value)
 	return result
+}
+export function logify(value: any): void {
+	for (const m in value) {
+		console.log(m)
+	}
 }

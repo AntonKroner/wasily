@@ -247,3 +247,4 @@ export class Env extends Imports {
 		return 0
 	}
 }
+export namespace Env {}

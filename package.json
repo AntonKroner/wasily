@@ -2,7 +2,10 @@
 	"name": "wasily",
 	"version": "0.0.1",
 	"license": "BSD-3-Clause",
-	"repository": "github:AntonKroner/wasily",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AntonKroner/wasily.git"
+	},
 	"private": false,
 	"type": "module",
 	"module": "./dist/mjs/index.js",

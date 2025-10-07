@@ -159,3 +159,4 @@ export class Worker<
 		return 0
 	}
 }
+export namespace Worker {}
