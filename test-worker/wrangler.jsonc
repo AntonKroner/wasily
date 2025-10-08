@@ -21,6 +21,14 @@
 		"host": "example.com",
 		"port": 8787
 	},
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./assets",
+		"not_found_handling": "single-page-application",
+		"run_worker_first": [
+			"/api*"
+		]
+	},
 	"vars": {},
 	"version_metadata": {
 		"binding": "version"

@@ -1,3 +1,4 @@
+import { waitUntil } from "cloudflare:workers"
 import { Imports } from "./Imports"
 import { ProcessExit } from "./ProcessExit"
 
@@ -9,8 +10,8 @@ export class Instance {
 	private readonly wasi: Imports.Wasi
 	readonly instance: WebAssembly.Instance
 	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
-		console.log("exports: ", WebAssembly.Module.exports(module))
-		console.log("imports: ", WebAssembly.Module.imports(module))
+		// console.log("exports: ", WebAssembly.Module.exports(module))
+		// console.log("imports: ", WebAssembly.Module.imports(module))
 		options?.imports && (this.#imports = options.imports)
 		options?.default?.env && (this.#imports["env"] = new Imports.Env())
 		this.wasi = new Imports.Wasi({
@@ -28,8 +29,8 @@ export class Instance {
 				clock_time_get: new WebAssembly.Suspending(this.#clock_time_get.bind(this)),
 			},
 		})
-		console.log("instance: ", this.instance)
-		console.log("instance.exports: ", this.instance.exports)
+		// console.log("instance: ", this.instance)
+		// console.log("instance.exports: ", this.instance.exports)
 		options?.exports?.forEach(
 			e =>
 				typeof this.instance.exports[e] == "function" &&
@@ -39,13 +40,15 @@ export class Instance {
 		this.wasi.memory = this.instance.exports.memory as WebAssembly.Memory
 	}
 
-	async run(): Promise<{ out: ReadableStream<Uint8Array>; error: ReadableStream<Uint8Array> }> {
-		await Promise.all(this.wasi.streams.map(s => s.preRun()))
+	run(): { out: ReadableStream<Uint8Array>; error: ReadableStream<Uint8Array> } {
+		// await Promise.all(this.wasi.streams.map(s => s.preRun()))
 		let error: number | undefined = undefined
 		try {
 			const entrypoint = WebAssembly.promising(this.instance.exports._start as any)
-			const result = await entrypoint()
-			console.log("result: ", result)
+			waitUntil
+			waitUntil(entrypoint().then(() => Promise.all(this.wasi.streams.map(s => s.close()))))
+			// const result =
+			// result && console.log("result: ", result)
 		} catch (e) {
 			if ((e as Error).message === "unreachable")
 				error = 134
@@ -55,8 +58,8 @@ export class Instance {
 				throw e
 		} finally {
 			// We must call close to avoid early termination due to hanging promise
-			await Promise.all(this.wasi.streams.map(s => s.close()))
-			await Promise.all(this.wasi.streams.map(s => s.postRun()))
+			// await Promise.all(this.wasi.streams.map(s => s.close()))
+			// await Promise.all(this.wasi.streams.map(s => s.postRun()))
 		}
 		error && console.log("error code: ", error)
 		// await Promise.all(this.wasi.streams.map(s => s.postRun()))

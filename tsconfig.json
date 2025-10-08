@@ -38,6 +38,7 @@
 			"./memfs/memfs.d.ts",
 			"vitest/globals",
 			"./global.d.ts",
+			"@cloudflare/workers-types",
 		]
 	},
 	"include": [

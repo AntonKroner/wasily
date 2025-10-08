@@ -23,7 +23,7 @@
 		"removeComments": true,
 		"noImplicitThis": true,
 		"noUnusedLocals": true,
-		"noUnusedParameters": true,
+		"noUnusedParameters": false,
 		"strictNullChecks": true,
 		"skipLibCheck": true
 	},

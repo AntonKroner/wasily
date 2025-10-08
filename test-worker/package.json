@@ -6,7 +6,7 @@
 		"types": "wrangler types --env-interface=Environment --path=Cloudflare.d.ts",
 		"build": "wrangler deploy --dry-run --outdir=dist",
 		"transpile": "tsc --build tsconfig.json -noEmit",
-		"start": "wrangler dev"
+		"start": "cd ../ && npm run build && cd test-worker && wrangler dev"
 	},
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "6.18.1",

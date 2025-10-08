@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable @typescript-eslint/no-empty-function */
+// import { waitUntil } from "cloudflare:workers"
 
 export interface FileDescriptor {
 	writev(iovs: Array<Uint8Array>): number | Promise<number>
@@ -74,24 +75,32 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 	}
 }
 class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
-	#writer: WritableStreamDefaultWriter
-	constructor(writer: WritableStreamDefaultWriter) {
+	// #writer: WritableStreamDefaultWriter
+	// private readable = new ReadableStream<Uint8Array>({ start: this.start.bind(this) })
+	constructor(private readonly writable: WritableStream<Uint8Array>) {
 		super()
-		this.#writer = writer
+		// this.#writer = writer
 	}
+	// async start(controller: ReadableStreamDefaultController<Uint8Array>) {}
 
 	async writev(iovs: Array<Uint8Array>): Promise<number> {
-		let written = 0
-		for (const iov of iovs) {
-			if (iov.byteLength) {
-				this.#writer.write(iov)
-				written += iov.byteLength
-			}
-		}
-		return written
+		console.log("aaaaaaaaaa")
+
+		const stream = new ReadableStream<Uint8Array>({
+			async start(controller) {
+				for (const iov of iovs) {
+					console.log({ iov })
+					iov.byteLength && controller.enqueue(iov)
+				}
+				controller.close()
+			},
+		})
+		stream.pipeTo(this.writable)
+		return iovs.map(iov => iov.byteLength).reduce((prev, curr) => prev + curr)
 	}
 	override async close(): Promise<void> {
-		this.#writer.close()
+		// waitUntil(this.writable.close())
+		// return this.writable.close()
 	}
 }
 class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {
@@ -164,18 +173,18 @@ class AsyncReadableStreamAdapter extends ReadableStreamBase implements FileDescr
 	}
 }
 export namespace FileDescriptor {
-	export function fromReadableStream(stream?: ReadableStream, async?: boolean): FileDescriptor {
+	export function fromReadableStream(stream?: ReadableStream<Uint8Array>, async?: boolean): FileDescriptor {
 		return !stream
 			? new DevNull()
 			: async
 			? new AsyncReadableStreamAdapter(stream.getReader())
 			: new SyncReadableStreamAdapter(stream.getReader())
 	}
-	export function fromWritableStream(stream?: WritableStream, async?: boolean): FileDescriptor {
+	export function fromWritableStream(stream?: WritableStream<Uint8Array>, async?: boolean): FileDescriptor {
 		return !stream
 			? new DevNull()
 			: async
-			? new AsyncWritableStreamAdapter(stream.getWriter())
+			? new AsyncWritableStreamAdapter(stream)
 			: new SyncWritableStreamAdapter(stream.getWriter())
 	}
 }
