@@ -37,7 +37,7 @@ export default {
 		// execution.waitUntil(decode(result.error).then(e => e.length && console.log("error: ", e)))
 		const { readable, writable } = new TransformStream<string, string>({
 			transform(chunk, controller) {
-				console.log({ chunk })
+				// console.log({ chunk })
 				controller.enqueue(chunk)
 			},
 		})

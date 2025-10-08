@@ -176,12 +176,15 @@ export class Wasi extends Imports {
 		return this.#memfs.exports.fd_write(fd, ciovs_ptr, ciovs_len, retptr0)
 	}
 	#poll_oneoff(in_ptr: number, out_ptr: number, nsubscriptions: number, retptr0: number): number {
+		console.log("poll_oneoff called.")
 		return wasi.Result.ENOSYS
 	}
 	#proc_exit(code: number): number {
+		console.log("proc_exit called.")
 		throw new ProcessExit(code)
 	}
 	#proc_raise(signal: number): number {
+		console.log("proc_raise called.")
 		return wasi.Result.ENOSYS
 	}
 	#random_get(buffer_ptr: number, buffer_len: number): number {
@@ -190,6 +193,7 @@ export class Wasi extends Imports {
 		return wasi.Result.SUCCESS
 	}
 	#sched_yield(): number {
+		console.log("sched_yield called.")
 		return wasi.Result.SUCCESS
 	}
 	#sock_recv(
@@ -200,12 +204,15 @@ export class Wasi extends Imports {
 		retptr0: number,
 		retptr1: number
 	): number {
+		console.log("sock_recv called.")
 		return wasi.Result.ENOSYS
 	}
 	#sock_send(fd: number, si_data_ptr: number, si_data_len: number, si_flags: number, retptr0: number): number {
+		console.log("sock_send called.")
 		return wasi.Result.ENOSYS
 	}
 	#sock_shutdown(fd: number, how: number): number {
+		console.log("sock_shutdown called.")
 		return wasi.Result.ENOSYS
 	}
 }

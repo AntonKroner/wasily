@@ -11,7 +11,7 @@
 	<textarea id="output" rows="10" cols="80" placeholder="Streaming response will appear here..."></textarea>
 	<script type="module">
 		async function streamToTextarea(url, textarea) {
-			const response = await fetch(url);
+			const response = await fetch(url, { method: "POST", body: "bbbbbbb" });
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			let { value, done } = await reader.read();

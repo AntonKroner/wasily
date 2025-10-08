@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable @typescript-eslint/no-empty-function */
-// import { waitUntil } from "cloudflare:workers"
 
 export interface FileDescriptor {
 	writev(iovs: Array<Uint8Array>): number | Promise<number>
@@ -75,28 +74,21 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 	}
 }
 class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
-	// #writer: WritableStreamDefaultWriter
 	private controller?: ReadableStreamDefaultController<Uint8Array>
 	private readable = new ReadableStream<Uint8Array>({ start: c => (this.controller = c) })
 	constructor(private readonly writable: WritableStream<Uint8Array>) {
 		super()
 		this.readable.pipeTo(this.writable)
-		// this.#writer = writer
 	}
-	// async start(controller: ReadableStreamDefaultController<Uint8Array>) {}
 
 	async writev(iovs: Array<Uint8Array>): Promise<number> {
-		console.log("aaaaaaaaaa")
 		for (const iov of iovs) {
-			console.log({ iov })
 			iov.byteLength && this.controller?.enqueue(iov)
 		}
 		return iovs.map(iov => iov.byteLength).reduce((prev, curr) => prev + curr)
 	}
 	override async close(): Promise<void> {
 		this.controller?.close()
-		// waitUntil(this.writable.close())
-		// return this.writable.close()
 	}
 }
 class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {
