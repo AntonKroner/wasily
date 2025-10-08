@@ -24,8 +24,9 @@ int main(int argc, char* argv[static argc]) {
   worker_log(value);
   logEnviron();
   for (int i = 0; i < 10; i++) {
-    worker_sleep(500);
     printf("const char *restrict, ...\n");
+    worker_sleep(500);
+    fflush(stdout);
   }
   return 0;
 }

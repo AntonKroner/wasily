@@ -76,29 +76,25 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 }
 class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
 	// #writer: WritableStreamDefaultWriter
-	// private readable = new ReadableStream<Uint8Array>({ start: this.start.bind(this) })
+	private controller?: ReadableStreamDefaultController<Uint8Array>
+	private readable = new ReadableStream<Uint8Array>({ start: c => (this.controller = c) })
 	constructor(private readonly writable: WritableStream<Uint8Array>) {
 		super()
+		this.readable.pipeTo(this.writable)
 		// this.#writer = writer
 	}
 	// async start(controller: ReadableStreamDefaultController<Uint8Array>) {}
 
 	async writev(iovs: Array<Uint8Array>): Promise<number> {
 		console.log("aaaaaaaaaa")
-
-		const stream = new ReadableStream<Uint8Array>({
-			async start(controller) {
-				for (const iov of iovs) {
-					console.log({ iov })
-					iov.byteLength && controller.enqueue(iov)
-				}
-				controller.close()
-			},
-		})
-		stream.pipeTo(this.writable)
+		for (const iov of iovs) {
+			console.log({ iov })
+			iov.byteLength && this.controller?.enqueue(iov)
+		}
 		return iovs.map(iov => iov.byteLength).reduce((prev, curr) => prev + curr)
 	}
 	override async close(): Promise<void> {
+		this.controller?.close()
 		// waitUntil(this.writable.close())
 		// return this.writable.close()
 	}
