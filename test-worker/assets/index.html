@@ -11,7 +11,36 @@
 	<textarea id="output" rows="10" cols="80" placeholder="Streaming response will appear here..."></textarea>
 	<script type="module">
 		async function streamToTextarea(url, textarea) {
-			const response = await fetch(url, { method: "POST", body: "bbbbbbb" });
+			const encoder = new TextEncoder()
+			for (const m in ReadableStream) {
+				console.log({ m, type: typeof (ReadableStream[m]) })
+			}
+			const items = ["a", "b", "c"]
+			const body = new ReadableStream({
+				async start(controller) {
+					for (const item of items) {
+						const encoded = encoder.encode(item)
+						console.log({ encoded })
+						encoded.byteLength && controller.enqueue(encoded)
+						// await new Promise(resolve => setTimeout(resolve, 1000))
+					}
+					controller.close()
+				},
+			})
+			console.log({ body });
+
+			const request = new Request(url, {
+				method: 'POST',
+				body: body,
+				duplex: 'half', // Allow streaming request body
+				headers: {
+					'Content-Type': "octet/stream",
+					// "transfer-encoding": "chunked"
+				}
+			});
+			const response = await fetch(request);
+			console.log("headers: ", [...response.headers.entries()]);
+
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			let { value, done } = await reader.read();
