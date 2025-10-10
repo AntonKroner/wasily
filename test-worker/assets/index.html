@@ -8,39 +8,12 @@
 </head>
 
 <body>
-	<textarea id="output" rows="10" cols="80" placeholder="Streaming response will appear here..."></textarea>
+	<textarea id="output" rows="40" cols="200" placeholder="Streaming response will appear here..."></textarea>
 	<script type="module">
 		async function streamToTextarea(url, textarea) {
-			const encoder = new TextEncoder()
-			for (const m in ReadableStream) {
-				console.log({ m, type: typeof (ReadableStream[m]) })
-			}
-			const items = ["a", "b", "c"]
-			const body = new ReadableStream({
-				async start(controller) {
-					for (const item of items) {
-						const encoded = encoder.encode(item)
-						console.log({ encoded })
-						encoded.byteLength && controller.enqueue(encoded)
-						// await new Promise(resolve => setTimeout(resolve, 1000))
-					}
-					controller.close()
-				},
-			})
-			console.log({ body });
-
-			const request = new Request(url, {
-				method: 'POST',
-				body: body,
-				duplex: 'half', // Allow streaming request body
-				headers: {
-					'Content-Type': "octet/stream",
-					// "transfer-encoding": "chunked"
-				}
-			});
+			const request = new Request(url, { method: 'POST', body: "body", });
 			const response = await fetch(request);
 			console.log("headers: ", [...response.headers.entries()]);
-
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			let { value, done } = await reader.read();
@@ -52,7 +25,6 @@
 			}
 			textarea.value += decoder.decode(); // flush
 		}
-
 		const textarea = document.getElementById('output');
 		streamToTextarea('http://localhost:8787/api', textarea);
 	</script>
