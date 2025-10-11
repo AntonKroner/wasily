@@ -15,6 +15,11 @@ export class Wasi extends Imports {
 	#env: Array<string>
 	streams: Array<FileDescriptor>
 	#memfs: MemFS = new MemFS([], {})
+	private readonly controllers: {
+		1?: ReadableStreamDefaultController<Uint8Array>
+		2?: ReadableStreamDefaultController<Uint8Array>
+	} = {}
+	readonly std: { out: ReadableStream<Uint8Array>; error: ReadableStream<Uint8Array> }
 	constructor(options?: Wasi.Options) {
 		super()
 		// console.log("WASI 1")
@@ -27,6 +32,10 @@ export class Wasi extends Imports {
 			FileDescriptor.fromWritableStream(options?.stdout, options?.streamStdio ?? false),
 			FileDescriptor.fromWritableStream(options?.stderr, options?.streamStdio ?? false),
 		]
+		this.std = {
+			out: new ReadableStream<Uint8Array>({ start: c => (this.controllers[1] = c) }),
+			error: new ReadableStream<Uint8Array>({ start: c => (this.controllers[2] = c) }),
+		}
 		// console.log("WASI 5")
 	}
 
@@ -139,6 +148,27 @@ export class Wasi extends Imports {
 	#environ_sizes_get(env_ptr: number, env_buf_size_ptr: number): number {
 		return this.#fillSizes(this.#env, env_ptr, env_buf_size_ptr)
 	}
+	// async readv(iovs: Array<Uint8Array>): Promise<number> {
+	// 	let read = 0
+	// 	for (let iov of iovs) {
+	// 		while (iov.byteLength > 0) {
+	// 			// pull only if pending queue is empty
+	// 			if (this.#pending.byteLength === 0) {
+	// 				const result = await this.#reader.read()
+	// 				if (result.done) {
+	// 					return read
+	// 				}
+	// 				this.#pending = result.value
+	// 			}
+	// 			const bytes = Math.min(iov.byteLength, this.#pending.byteLength)
+	// 			iov.set(this.#pending!.subarray(0, bytes))
+	// 			this.#pending = this.#pending!.subarray(bytes)
+	// 			read += bytes
+	// 			iov = iov.subarray(bytes)
+	// 		}
+	// 	}
+	// 	return read
+	// }
 	#fd_read(fd: number, iovs_ptr: number, iovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
 			const desc = this.streams[fd]
@@ -157,18 +187,17 @@ export class Wasi extends Imports {
 		}
 		return this.#memfs.exports.fd_read(fd, iovs_ptr, iovs_len, retptr0)
 	}
+	private async writev(iovs: Uint8Array[], fd: 1 | 2): Promise<number> {
+		for (const iov of iovs) {
+			iov.byteLength && this.controllers[fd]?.enqueue(iov)
+		}
+		return iovs.map(iov => iov.byteLength).reduce((prev, curr) => prev + curr)
+	}
 	#fd_write(fd: number, ciovs_ptr: number, ciovs_len: number, retptr0: number): Promise<number> | number {
-		if (fd < 3) {
-			const desc = this.streams[fd]
+		if (fd == 1 || fd == 2) {
 			const view = this.view()
 			const iovs = wasi.iovViews(view, ciovs_ptr, ciovs_len)
-			const result = desc!.writev(iovs)
-			if (typeof result === "number") {
-				view.setUint32(retptr0, result, true)
-				return wasi.Result.SUCCESS
-			}
-			const promise = result as Promise<number>
-			return promise.then((written: number) => {
+			return this.writev(iovs, fd).then(written => {
 				view.setUint32(retptr0, written, true)
 				return wasi.Result.SUCCESS
 			})
