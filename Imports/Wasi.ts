@@ -1,6 +1,5 @@
 export { traceImportsToConsole } from "../helpers"
 import * as platform from "@cloudflare/workers-types"
-// import { FileDescriptor } from "../FileDescriptor"
 import { _FS, MemFS } from "../memfs"
 import { ProcessExit } from "../ProcessExit"
 import * as wasi from "../snapshot_preview1"
@@ -13,7 +12,6 @@ export class Wasi extends Imports {
 	}
 	#args: Array<string>
 	#env: Array<string>
-	// streams: Array<FileDescriptor>
 	#memfs: MemFS = new MemFS([], {})
 	private readonly controllers: {
 		1?: ReadableStreamDefaultController<Uint8Array>
@@ -27,25 +25,16 @@ export class Wasi extends Imports {
 	} = { buffer: new Uint8Array() }
 	constructor(options?: Wasi.Options) {
 		super()
-		// console.log("WASI 1")
 		this.#args = options?.args ?? []
-		// console.log("WASI 2")
 		this.#env = Object.entries(options?.env ?? {}).map(([key, value]) => `${key}=${value}`)
-		// console.log("WASI 3")
 		if (options?.stdin) {
 			this.in.stream = options.stdin
 			this.in.reader = options.stdin.getReader()
 		}
-		// this.streams = [
-		// 	FileDescriptor.fromReadableStream(options?.stdin, options?.streamStdio ?? false),
-		// 	FileDescriptor.fromWritableStream(options?.stdout, options?.streamStdio ?? false),
-		// 	FileDescriptor.fromWritableStream(options?.stderr, options?.streamStdio ?? false),
-		// ]
 		this.std = {
 			out: new ReadableStream<Uint8Array>({ start: c => (this.controllers[1] = c) }),
 			error: new ReadableStream<Uint8Array>({ start: c => (this.controllers[2] = c) }),
 		}
-		// console.log("WASI 5")
 	}
 
 	open(): Record<keyof wasi.SnapshotPreview1, WebAssembly.Suspending | ((...args: any[]) => number)> {
@@ -175,7 +164,6 @@ export class Wasi extends Imports {
 				iov.set(this.in.buffer.subarray(0, bytes))
 				this.in.buffer = this.in.buffer.subarray(bytes)
 				read += bytes
-
 				iov = iov.subarray(bytes)
 			}
 		}
@@ -183,15 +171,9 @@ export class Wasi extends Imports {
 	}
 	#fd_read(fd: number, iovs_ptr: number, iovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
-			// const desc = this.streams[fd]
 			const view = this.view()
 			const iovs = wasi.iovViews(view, iovs_ptr, iovs_len)
 			const result = this.readv(iovs)
-			// if (typeof result === "number") {
-			// 	view.setUint32(retptr0, result, true)
-			// 	return wasi.Result.SUCCESS
-			// }
-			// const promise = result as Promise<number>
 			return result.then((read: number) => {
 				view.setUint32(retptr0, read, true)
 				return wasi.Result.SUCCESS
@@ -267,12 +249,6 @@ export namespace Wasi {
 		preopens?: string[]
 		/*** Input stream that the application will be able to read from via stdin*/
 		stdin?: ReadableStream
-		// /*** Output stream that the application will be able to write to via stdin*/
-		// stdout?: WritableStream
-		// /*** Output stream that the application will be able to write to via stderr*/
-		// stderr?: WritableStream
-		// /*** Enable async IO for stdio streams, requires the application is built with {@link asyncify|https://web.dev/asyncify/}** @experimental* @defaultValue `false`**/
-		// streamStdio?: boolean
 		/*** Initial filesystem contents, currently used for testing with* existing WASI test suites* @internal**/
 		fs?: _FS
 	}

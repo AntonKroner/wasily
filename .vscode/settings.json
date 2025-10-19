@@ -32,6 +32,8 @@
 		"authly",
 		"cloudly",
 		"cryptly",
+		"fdstat",
+		"filestat",
 		"flagly",
 		"gracely",
 		"huggingface",

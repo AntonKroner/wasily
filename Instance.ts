@@ -5,23 +5,12 @@ import { ProcessExit } from "./ProcessExit"
 export class Instance {
 	readonly exports: Record<string, (...args: any[]) => number | Promise<number>> = {}
 	#imports: Record<string, Imports> = {}
-	// #stdout: TransformStream = new TransformStream()
-	// #stderr: TransformStream = new TransformStream()
 	private readonly wasi: Imports.Wasi
 	readonly instance: WebAssembly.Instance
 	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
-		// console.log("exports: ", WebAssembly.Module.exports(module))
-		// console.log("imports: ", WebAssembly.Module.imports(module))
 		options?.imports && (this.#imports = options.imports)
 		options?.default?.env && (this.#imports["env"] = new Imports.Env())
-		this.wasi = new Imports.Wasi({
-			args: options?.arguments,
-			env: options?.environment,
-			stdin: options?.input,
-			// streamStdio: true,
-			// stderr: this.#stderr.writable,
-			// stdout: this.#stdout.writable,
-		})
+		this.wasi = new Imports.Wasi({ args: options?.arguments, env: options?.environment, stdin: options?.input })
 		this.instance = new WebAssembly.Instance(module, {
 			...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
 			wasi_snapshot_preview1: {
@@ -29,8 +18,6 @@ export class Instance {
 				clock_time_get: new WebAssembly.Suspending(this.#clock_time_get.bind(this)),
 			},
 		})
-		// console.log("instance: ", this.instance)
-		// console.log("instance.exports: ", this.instance.exports)
 		options?.exports?.forEach(
 			e =>
 				typeof this.instance.exports[e] == "function" &&
@@ -41,14 +28,10 @@ export class Instance {
 	}
 
 	run(): { out: ReadableStream<Uint8Array>; error: ReadableStream<Uint8Array> } {
-		// await Promise.all(this.wasi.streams.map(s => s.preRun()))
 		let error: number | undefined = undefined
 		try {
 			const entrypoint = WebAssembly.promising(this.instance.exports._start as any)
-			waitUntil
 			waitUntil(entrypoint().then(() => this.wasi.fd_close()))
-			// const result =
-			// result && console.log("result: ", result)
 		} catch (e) {
 			if ((e as Error).message === "unreachable")
 				error = 134
@@ -56,13 +39,8 @@ export class Instance {
 				error = e.code
 			else
 				throw e
-		} finally {
-			// We must call close to avoid early termination due to hanging promise
-			// await Promise.all(this.wasi.streams.map(s => s.close()))
-			// await Promise.all(this.wasi.streams.map(s => s.postRun()))
 		}
 		error && console.log("error code: ", error)
-		// await Promise.all(this.wasi.streams.map(s => s.postRun()))
 		return { out: this.wasi.std.out, error: this.wasi.std.error }
 	}
 	async #clock_time_get(id: number, precision: bigint, retptr0: number): Promise<number> {
