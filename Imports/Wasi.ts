@@ -1,4 +1,3 @@
-export { traceImportsToConsole } from "../helpers"
 import * as platform from "@cloudflare/workers-types"
 import { _FS, MemFS } from "../memfs"
 import { ProcessExit } from "../ProcessExit"
@@ -10,8 +9,8 @@ export class Wasi extends Imports {
 		this.#memfs.initialize(memory)
 		super.memory = memory
 	}
-	#args: Array<string>
-	#env: Array<string>
+	#args: string[]
+	#env: string[]
 	#memfs: MemFS = new MemFS([], {})
 	private readonly controllers: {
 		1?: ReadableStreamDefaultController<Uint8Array>
@@ -23,11 +22,11 @@ export class Wasi extends Imports {
 		reader?: ReadableStreamDefaultReader
 		buffer: Uint8Array
 	} = { buffer: new Uint8Array() }
-	constructor(options?: Wasi.Options) {
+	constructor(options: Wasi.Options = {}) {
 		super()
-		this.#args = options?.args ?? []
-		this.#env = Object.entries(options?.env ?? {}).map(([key, value]) => `${key}=${value}`)
-		if (options?.stdin) {
+		this.#args = options.args ?? []
+		this.#env = Object.entries(options.env ?? {}).map(([key, value]) => `${key}=${value}`)
+		if (options.stdin) {
 			this.in.stream = options.stdin
 			this.in.reader = options.stdin.getReader()
 		}
@@ -87,7 +86,7 @@ export class Wasi extends Imports {
 		}
 		return result
 	}
-	#fillValues(values: Array<string>, iter_ptr_ptr: number, buf_ptr: number): number {
+	#fillValues(values: string[], iter_ptr_ptr: number, buf_ptr: number): number {
 		const encoder = new TextEncoder()
 		const buffer = new Uint8Array(this.buffer)
 		const view = this.view()
@@ -100,7 +99,7 @@ export class Wasi extends Imports {
 		}
 		return wasi.Result.SUCCESS
 	}
-	#fillSizes(values: Array<string>, count_ptr: number, buffer_size_ptr: number): number {
+	#fillSizes(values: string[], count_ptr: number, buffer_size_ptr: number): number {
 		const view = this.view()
 		const encoder = new TextEncoder()
 		const length = values.reduce((result, value) => result + encoder.encode(`${value}\0`).length, 0)
@@ -146,7 +145,7 @@ export class Wasi extends Imports {
 	#environ_sizes_get(env_ptr: number, env_buf_size_ptr: number): number {
 		return this.#fillSizes(this.#env, env_ptr, env_buf_size_ptr)
 	}
-	async readv(iovs: Array<Uint8Array>): Promise<number> {
+	async readv(iovs: Uint8Array[]): Promise<number> {
 		let read = 0
 		if (!this.in.reader)
 			return 0

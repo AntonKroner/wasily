@@ -7,10 +7,10 @@ export class Instance {
 	#imports: Record<string, Imports> = {}
 	private readonly wasi: Imports.Wasi
 	readonly instance: WebAssembly.Instance
-	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
-		options?.imports && (this.#imports = options.imports)
-		options?.default?.env && (this.#imports["env"] = new Imports.Env())
-		this.wasi = new Imports.Wasi({ args: options?.arguments, env: options?.environment, stdin: options?.input })
+	private constructor(module: WebAssembly.Module, options: Partial<Instance.Options> = {}) {
+		options.imports && (this.#imports = options.imports)
+		options.default?.env && (this.#imports["env"] = new Imports.Env())
+		this.wasi = new Imports.Wasi({ args: options.arguments, env: options.environment, stdin: options.input })
 		this.instance = new WebAssembly.Instance(module, {
 			...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
 			wasi_snapshot_preview1: {
@@ -18,7 +18,7 @@ export class Instance {
 				clock_time_get: new WebAssembly.Suspending(this.#clock_time_get.bind(this)),
 			},
 		})
-		options?.exports?.forEach(
+		options.exports?.forEach(
 			e =>
 				typeof this.instance.exports[e] == "function" &&
 				(this.exports[e] = WebAssembly.promising(this.instance.exports[e] as () => number))
