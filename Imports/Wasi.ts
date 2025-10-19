@@ -19,7 +19,7 @@ export class Wasi extends Imports {
 	readonly std: { out: ReadableStream<Uint8Array>; error: ReadableStream<Uint8Array> }
 	private readonly in: {
 		stream?: ReadableStream<Uint8Array>
-		reader?: ReadableStreamDefaultReader
+		reader?: ReadableStreamDefaultReader<Uint8Array>
 		buffer: Uint8Array
 	} = { buffer: new Uint8Array() }
 	constructor(options: Wasi.Options = {}) {
@@ -147,23 +147,23 @@ export class Wasi extends Imports {
 	}
 	async readv(iovs: Uint8Array[]): Promise<number> {
 		let read = 0
-		if (!this.in.reader)
-			return 0
-		for (let iov of iovs) {
-			while (iov.byteLength > 0) {
-				// pull only if pending queue is empty
-				if (this.in.buffer.byteLength === 0) {
-					const result = await this.in.reader.read()
-					if (result.done) {
-						return read
+		if (this.in.reader) {
+			for (let iov of iovs) {
+				while (iov.byteLength > 0) {
+					// pull only if pending queue is empty
+					if (this.in.buffer.byteLength === 0) {
+						const result = await this.in.reader.read()
+						if (result.done) {
+							return read
+						}
+						this.in.buffer = result.value
 					}
-					this.in.buffer = result.value
+					const bytes = Math.min(iov.byteLength, this.in.buffer.byteLength)
+					iov.set(this.in.buffer.subarray(0, bytes))
+					this.in.buffer = this.in.buffer.subarray(bytes)
+					read += bytes
+					iov = iov.subarray(bytes)
 				}
-				const bytes = Math.min(iov.byteLength, this.in.buffer.byteLength)
-				iov.set(this.in.buffer.subarray(0, bytes))
-				this.in.buffer = this.in.buffer.subarray(bytes)
-				read += bytes
-				iov = iov.subarray(bytes)
 			}
 		}
 		return read
@@ -171,7 +171,7 @@ export class Wasi extends Imports {
 	#fd_read(fd: number, iovs_ptr: number, iovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
 			const view = this.view()
-			const iovs = wasi.iovViews(view, iovs_ptr, iovs_len)
+			const iovs = Wasi.iovViews(view, iovs_ptr, iovs_len)
 			const result = this.readv(iovs)
 			return result.then((read: number) => {
 				view.setUint32(retptr0, read, true)
@@ -186,7 +186,7 @@ export class Wasi extends Imports {
 	#fd_write(fd: number, ciovs_ptr: number, ciovs_len: number, retptr0: number): number {
 		if (fd == 1 || fd == 2) {
 			const view = this.view()
-			const iovs = wasi.iovViews(view, ciovs_ptr, ciovs_len)
+			const iovs = Wasi.iovViews(view, ciovs_ptr, ciovs_len)
 			const written = iovs.reduce((result, iov) => {
 				iov.byteLength && this.controllers[fd]?.enqueue(iov)
 				return result + iov.byteLength
@@ -235,6 +235,18 @@ export class Wasi extends Imports {
 	#sock_shutdown(fd: number, how: number): number {
 		console.log("sock_shutdown called.")
 		return wasi.Result.ENOSYS
+	}
+
+	private static iovViews(view: DataView, iovs_ptr: number, iovs_len: number): Uint8Array[] {
+		const result = new Array<Uint8Array>(iovs_len)
+		for (let i = 0; i < iovs_len; i++) {
+			const bufferPtr = view.getUint32(iovs_ptr, true)
+			iovs_ptr += 4
+			const bufferLen = view.getUint32(iovs_ptr, true)
+			iovs_ptr += 4
+			result[i] = new Uint8Array(view.buffer, bufferPtr, bufferLen)
+		}
+		return result
 	}
 }
 export type { _FS }

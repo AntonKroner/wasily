@@ -112,14 +112,3 @@ export enum Clock {
 	PROCESS_CPUTIME_ID = 2,
 	THREAD_CPUTIME_ID = 3,
 }
-export const iovViews = (view: DataView, iovs_ptr: number, iovs_len: number): Array<Uint8Array> => {
-	const result = Array<Uint8Array>(iovs_len)
-	for (let i = 0; i < iovs_len; i++) {
-		const bufferPtr = view.getUint32(iovs_ptr, true)
-		iovs_ptr += 4
-		const bufferLen = view.getUint32(iovs_ptr, true)
-		iovs_ptr += 4
-		result[i] = new Uint8Array(view.buffer, bufferPtr, bufferLen)
-	}
-	return result
-}
