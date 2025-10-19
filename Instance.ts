@@ -5,8 +5,8 @@ import { ProcessExit } from "./ProcessExit"
 export class Instance {
 	readonly exports: Record<string, (...args: any[]) => number | Promise<number>> = {}
 	#imports: Record<string, Imports> = {}
-	#stdout: TransformStream = new TransformStream()
-	#stderr: TransformStream = new TransformStream()
+	// #stdout: TransformStream = new TransformStream()
+	// #stderr: TransformStream = new TransformStream()
 	private readonly wasi: Imports.Wasi
 	readonly instance: WebAssembly.Instance
 	private constructor(module: WebAssembly.Module, options?: Partial<Instance.Options>) {
@@ -17,10 +17,10 @@ export class Instance {
 		this.wasi = new Imports.Wasi({
 			args: options?.arguments,
 			env: options?.environment,
-			streamStdio: true,
 			stdin: options?.input,
-			stderr: this.#stderr.writable,
-			stdout: this.#stdout.writable,
+			// streamStdio: true,
+			// stderr: this.#stderr.writable,
+			// stdout: this.#stdout.writable,
 		})
 		this.instance = new WebAssembly.Instance(module, {
 			...Object.fromEntries(Object.entries(this.#imports).map(([name, imports]) => [name, imports.open()])),
@@ -46,7 +46,7 @@ export class Instance {
 		try {
 			const entrypoint = WebAssembly.promising(this.instance.exports._start as any)
 			waitUntil
-			waitUntil(entrypoint().then(() => Promise.all(this.wasi.streams.map(s => s.close()))))
+			waitUntil(entrypoint().then(() => this.wasi.fd_close()))
 			// const result =
 			// result && console.log("result: ", result)
 		} catch (e) {
@@ -63,7 +63,7 @@ export class Instance {
 		}
 		error && console.log("error code: ", error)
 		// await Promise.all(this.wasi.streams.map(s => s.postRun()))
-		return { out: this.#stdout.readable, error: this.#stderr.readable }
+		return { out: this.wasi.std.out, error: this.wasi.std.error }
 	}
 	async #clock_time_get(id: number, precision: bigint, retptr0: number): Promise<number> {
 		const response = await fetch("http://worldtimeapi.org/api/timezone/Europe/Stockholm")
