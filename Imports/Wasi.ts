@@ -1,6 +1,5 @@
 export { traceImportsToConsole } from "../helpers"
 import * as platform from "@cloudflare/workers-types"
-import { FileDescriptor } from "../FileDescriptor"
 import { _FS, MemFS } from "../memfs"
 import { ProcessExit } from "../ProcessExit"
 import * as wasi from "../snapshot_preview1"
@@ -13,21 +12,29 @@ export class Wasi extends Imports {
 	}
 	#args: Array<string>
 	#env: Array<string>
-	streams: Array<FileDescriptor>
 	#memfs: MemFS = new MemFS([], {})
+	private readonly controllers: {
+		1?: ReadableStreamDefaultController<Uint8Array>
+		2?: ReadableStreamDefaultController<Uint8Array>
+	} = {}
+	readonly std: { out: ReadableStream<Uint8Array>; error: ReadableStream<Uint8Array> }
+	private readonly in: {
+		stream?: ReadableStream<Uint8Array>
+		reader?: ReadableStreamDefaultReader
+		buffer: Uint8Array
+	} = { buffer: new Uint8Array() }
 	constructor(options?: Wasi.Options) {
 		super()
-		// console.log("WASI 1")
 		this.#args = options?.args ?? []
-		// console.log("WASI 2")
 		this.#env = Object.entries(options?.env ?? {}).map(([key, value]) => `${key}=${value}`)
-		// console.log("WASI 3")
-		this.streams = [
-			FileDescriptor.fromReadableStream(options?.stdin, options?.streamStdio ?? false),
-			FileDescriptor.fromWritableStream(options?.stdout, options?.streamStdio ?? false),
-			FileDescriptor.fromWritableStream(options?.stderr, options?.streamStdio ?? false),
-		]
-		// console.log("WASI 5")
+		if (options?.stdin) {
+			this.in.stream = options.stdin
+			this.in.reader = options.stdin.getReader()
+		}
+		this.std = {
+			out: new ReadableStream<Uint8Array>({ start: c => (this.controllers[1] = c) }),
+			error: new ReadableStream<Uint8Array>({ start: c => (this.controllers[2] = c) }),
+		}
 	}
 
 	open(): Record<keyof wasi.SnapshotPreview1, WebAssembly.Suspending | ((...args: any[]) => number)> {
@@ -58,7 +65,7 @@ export class Wasi extends Imports {
 			fd_seek: this.#memfs.exports.fd_seek.bind(this),
 			fd_sync: this.#memfs.exports.fd_sync.bind(this),
 			fd_tell: this.#memfs.exports.fd_tell.bind(this),
-			fd_write: new WebAssembly.Suspending(this.#fd_write.bind(this)),
+			fd_write: this.#fd_write.bind(this),
 			path_create_directory: this.#memfs.exports.path_create_directory.bind(this),
 			path_filestat_get: this.#memfs.exports.path_filestat_get.bind(this),
 			path_filestat_set_times: this.#memfs.exports.path_filestat_set_times.bind(this),
@@ -139,49 +146,67 @@ export class Wasi extends Imports {
 	#environ_sizes_get(env_ptr: number, env_buf_size_ptr: number): number {
 		return this.#fillSizes(this.#env, env_ptr, env_buf_size_ptr)
 	}
+	async readv(iovs: Array<Uint8Array>): Promise<number> {
+		let read = 0
+		if (!this.in.reader)
+			return 0
+		for (let iov of iovs) {
+			while (iov.byteLength > 0) {
+				// pull only if pending queue is empty
+				if (this.in.buffer.byteLength === 0) {
+					const result = await this.in.reader.read()
+					if (result.done) {
+						return read
+					}
+					this.in.buffer = result.value
+				}
+				const bytes = Math.min(iov.byteLength, this.in.buffer.byteLength)
+				iov.set(this.in.buffer.subarray(0, bytes))
+				this.in.buffer = this.in.buffer.subarray(bytes)
+				read += bytes
+				iov = iov.subarray(bytes)
+			}
+		}
+		return read
+	}
 	#fd_read(fd: number, iovs_ptr: number, iovs_len: number, retptr0: number): Promise<number> | number {
 		if (fd < 3) {
-			const desc = this.streams[fd]
 			const view = this.view()
 			const iovs = wasi.iovViews(view, iovs_ptr, iovs_len)
-			const result = desc!.readv(iovs)
-			if (typeof result === "number") {
-				view.setUint32(retptr0, result, true)
-				return wasi.Result.SUCCESS
-			}
-			const promise = result as Promise<number>
-			return promise.then((read: number) => {
+			const result = this.readv(iovs)
+			return result.then((read: number) => {
 				view.setUint32(retptr0, read, true)
 				return wasi.Result.SUCCESS
 			})
 		}
 		return this.#memfs.exports.fd_read(fd, iovs_ptr, iovs_len, retptr0)
 	}
-	#fd_write(fd: number, ciovs_ptr: number, ciovs_len: number, retptr0: number): Promise<number> | number {
-		if (fd < 3) {
-			const desc = this.streams[fd]
+	fd_close() {
+		Object.values(this.controllers).map(c => c?.close())
+	}
+	#fd_write(fd: number, ciovs_ptr: number, ciovs_len: number, retptr0: number): number {
+		if (fd == 1 || fd == 2) {
 			const view = this.view()
 			const iovs = wasi.iovViews(view, ciovs_ptr, ciovs_len)
-			const result = desc!.writev(iovs)
-			if (typeof result === "number") {
-				view.setUint32(retptr0, result, true)
-				return wasi.Result.SUCCESS
-			}
-			const promise = result as Promise<number>
-			return promise.then((written: number) => {
-				view.setUint32(retptr0, written, true)
-				return wasi.Result.SUCCESS
-			})
+			const written = iovs.reduce((result, iov) => {
+				iov.byteLength && this.controllers[fd]?.enqueue(iov)
+				return result + iov.byteLength
+			}, 0)
+			view.setUint32(retptr0, written, true)
+			return wasi.Result.SUCCESS
 		}
 		return this.#memfs.exports.fd_write(fd, ciovs_ptr, ciovs_len, retptr0)
 	}
 	#poll_oneoff(in_ptr: number, out_ptr: number, nsubscriptions: number, retptr0: number): number {
+		console.log("poll_oneoff called.")
 		return wasi.Result.ENOSYS
 	}
 	#proc_exit(code: number): number {
+		console.log("proc_exit called.")
 		throw new ProcessExit(code)
 	}
 	#proc_raise(signal: number): number {
+		console.log("proc_raise called.")
 		return wasi.Result.ENOSYS
 	}
 	#random_get(buffer_ptr: number, buffer_len: number): number {
@@ -190,6 +215,7 @@ export class Wasi extends Imports {
 		return wasi.Result.SUCCESS
 	}
 	#sched_yield(): number {
+		console.log("sched_yield called.")
 		return wasi.Result.SUCCESS
 	}
 	#sock_recv(
@@ -200,12 +226,15 @@ export class Wasi extends Imports {
 		retptr0: number,
 		retptr1: number
 	): number {
+		console.log("sock_recv called.")
 		return wasi.Result.ENOSYS
 	}
 	#sock_send(fd: number, si_data_ptr: number, si_data_len: number, si_flags: number, retptr0: number): number {
+		console.log("sock_send called.")
 		return wasi.Result.ENOSYS
 	}
 	#sock_shutdown(fd: number, how: number): number {
+		console.log("sock_shutdown called.")
 		return wasi.Result.ENOSYS
 	}
 }
@@ -220,12 +249,6 @@ export namespace Wasi {
 		preopens?: string[]
 		/*** Input stream that the application will be able to read from via stdin*/
 		stdin?: ReadableStream
-		/*** Output stream that the application will be able to write to via stdin*/
-		stdout?: WritableStream
-		/*** Output stream that the application will be able to write to via stderr*/
-		stderr?: WritableStream
-		/*** Enable async IO for stdio streams, requires the application is built with {@link asyncify|https://web.dev/asyncify/}** @experimental* @defaultValue `false`**/
-		streamStdio?: boolean
 		/*** Initial filesystem contents, currently used for testing with* existing WASI test suites* @internal**/
 		fs?: _FS
 	}

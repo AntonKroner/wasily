@@ -74,24 +74,21 @@ class SyncWritableStreamAdapter extends WritableStreamBase implements FileDescri
 	}
 }
 class AsyncWritableStreamAdapter extends WritableStreamBase implements FileDescriptor {
-	#writer: WritableStreamDefaultWriter
-	constructor(writer: WritableStreamDefaultWriter) {
+	private controller?: ReadableStreamDefaultController<Uint8Array>
+	private readable = new ReadableStream<Uint8Array>({ start: c => (this.controller = c) })
+	constructor(private readonly writable: WritableStream<Uint8Array>) {
 		super()
-		this.#writer = writer
+		this.readable.pipeTo(this.writable)
 	}
 
 	async writev(iovs: Array<Uint8Array>): Promise<number> {
-		let written = 0
 		for (const iov of iovs) {
-			if (iov.byteLength) {
-				this.#writer.write(iov)
-				written += iov.byteLength
-			}
+			iov.byteLength && this.controller?.enqueue(iov)
 		}
-		return written
+		return iovs.map(iov => iov.byteLength).reduce((prev, curr) => prev + curr)
 	}
 	override async close(): Promise<void> {
-		this.#writer.close()
+		this.controller?.close()
 	}
 }
 class SyncReadableStreamAdapter extends ReadableStreamBase implements FileDescriptor {
@@ -164,18 +161,18 @@ class AsyncReadableStreamAdapter extends ReadableStreamBase implements FileDescr
 	}
 }
 export namespace FileDescriptor {
-	export function fromReadableStream(stream?: ReadableStream, async?: boolean): FileDescriptor {
+	export function fromReadableStream(stream?: ReadableStream<Uint8Array>, async?: boolean): FileDescriptor {
 		return !stream
 			? new DevNull()
 			: async
 			? new AsyncReadableStreamAdapter(stream.getReader())
 			: new SyncReadableStreamAdapter(stream.getReader())
 	}
-	export function fromWritableStream(stream?: WritableStream, async?: boolean): FileDescriptor {
+	export function fromWritableStream(stream?: WritableStream<Uint8Array>, async?: boolean): FileDescriptor {
 		return !stream
 			? new DevNull()
 			: async
-			? new AsyncWritableStreamAdapter(stream.getWriter())
+			? new AsyncWritableStreamAdapter(stream)
 			: new SyncWritableStreamAdapter(stream.getWriter())
 	}
 }

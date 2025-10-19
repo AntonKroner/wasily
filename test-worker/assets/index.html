@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test Worker</title>
+</head>
+
+<body>
+	<textarea id="output" rows="40" cols="200" placeholder="Streaming response will appear here..."></textarea>
+	<script type="module">
+		async function streamToTextarea(url, textarea) {
+			const request = new Request(url, { method: 'POST', body: "body", });
+			const response = await fetch(request);
+			console.log("headers: ", [...response.headers.entries()]);
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let { value, done } = await reader.read();
+			while (!done) {
+				textarea.value += decoder.decode(value, { stream: true });
+				textarea.scrollTop = textarea.scrollHeight;
+				({ value, done } = await reader.read());
+				console.log({ value });
+			}
+			textarea.value += decoder.decode(); // flush
+		}
+		const textarea = document.getElementById('output');
+		streamToTextarea('http://localhost:8787/api', textarea);
+	</script>
+</body>
+
+</html>
