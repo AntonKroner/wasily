@@ -1,9 +1,9 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "wasily-test-worker",
+	"name": "sturdy-spoon-robot",
 	"main": "./index.ts",
-	"compatibility_date": "2025-10-01",
-	"minify": false,
+	"compatibility_date": "2025-11-26",
+	"minify": true,
 	"tsconfig": "./tsconfig.json",
 	"upload_source_maps": true,
 	"workers_dev": true,
@@ -12,7 +12,8 @@
 		"head_sampling_rate": 1
 	},
 	"compatibility_flags": [
-		"nodejs_compat"
+		"nodejs_compat",
+		"enable_nodejs_wasi_module",
 	],
 	"build": {
 		"command": "npm run transpile"
@@ -35,7 +36,7 @@
 	},
 	"kv_namespaces": [
 		{
-			"binding": "kvStore",
+			"binding": "memoryStore",
 			"id": "aaaaa",
 			"preview_id": "aaaaa"
 		}
